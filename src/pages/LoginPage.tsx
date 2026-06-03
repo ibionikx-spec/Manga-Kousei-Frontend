@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./LoginPage.css";
 import { getErrorMessage } from "../utils/axios";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 function PenIcon() {
   return (
@@ -151,6 +151,8 @@ export default function LoginPage() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const { login } = useAuth();
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
@@ -162,15 +164,9 @@ export default function LoginPage() {
     };
 
     try {
-      const response = await api.post("/auth/login", loginPayload);
+      await login(loginPayload);
 
-      if (response.status === 200) {
-        console.log("Đăng nhập thành công:", response.data);
-
-        const accessToken = response.data.data.accessToken;
-        sessionStorage.setItem("accessToken", accessToken);
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);
       const errorMsg = getErrorMessage(
