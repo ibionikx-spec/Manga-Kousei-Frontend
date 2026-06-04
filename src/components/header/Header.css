@@ -78,19 +78,17 @@
   right: 0px;
   width: 8px;
   height: 8px;
-  background-color: #ef4444; /* Màu đỏ */
+  background-color: #ef4444;
   border-radius: 50%;
-  border: 1.5px solid #ffffff; /* Viền trắng để nổi lên */
+  border: 1.5px solid #ffffff;
 }
 
-/* Vạch ngăn cách */
 .divider {
   height: 32px;
   width: 1px;
   background-color: #d1d5db;
 }
 
-/* Cụm thông tin User */
 .user-profile {
   display: flex;
   align-items: center;
@@ -117,10 +115,9 @@
   text-transform: capitalize;
 }
 
-/* Avatar */
 .user-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 8px; /* Bo góc hơi vuông giống trong hình */
+  border-radius: 8px;
   object-fit: cover;
 }
