@@ -11,6 +11,7 @@ import AdminApprovalsPage from "./pages/admin/AdminApprovals";
 import AdminMagazines from "./pages/admin/AdminMagazines";
 import AdminContracts from "./pages/admin/AdminContracts";
 import { Unauthorized } from "./pages/others/Unauthorized";
+import { NotFound } from "./pages/others/NotFound";
 
 function App() {
   return (
@@ -41,6 +42,8 @@ function App() {
           </Route>
         </Route>
       </Route>
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
