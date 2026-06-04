@@ -6,7 +6,7 @@ import { PublicRoute } from "./components/Routes/PublicRoute";
 import { MainLayout } from "./components/layouts/MainLayout";
 import AdminRating from "./pages/admin/RatingPage";
 import MangakaDashboard from "./pages/mangaka/Dashboard";
-import { DashboardRedirect } from "./pages/DashboardRedirect";
+import { DashboardRedirect } from "./pages/redirect/DashboardRedirect";
 import AdminApprovalsPage from "./pages/admin/ApprovalsPage";
 
 function App() {
