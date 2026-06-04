@@ -94,11 +94,11 @@ export const Sidebar = () => {
         <div className="divider"></div>
 
         <NavLink
-          to="/support"
+          to="/setting"
           className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
         >
           <CircleHelp size={20} className="menu-icon" />
-          <span>Hỗ trợ</span>
+          <span>Cài đặt</span>
         </NavLink>
 
         <button onClick={logout} className="menu-item logout-btn">
