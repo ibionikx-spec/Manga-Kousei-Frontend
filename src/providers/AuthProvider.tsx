@@ -85,10 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
+  const logout = async () => {
+    sessionStorage.removeItem("accessToken");
     setUser(null);
+
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("logout function error in Provider:", error);
+    }
   };
 
   const value: AuthContextType = {
