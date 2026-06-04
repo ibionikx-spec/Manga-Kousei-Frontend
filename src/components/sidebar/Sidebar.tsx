@@ -11,6 +11,8 @@ import {
   TrendingUp,
   CircleHelp,
   LogOut,
+  BookOpen,
+  Banknote,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import "./Sidebar.scss";
@@ -27,7 +29,7 @@ export const Sidebar = () => {
   const currentRole = user?.role || "";
 
   const menuConfig: Record<string, MenuItem[]> = {
-    ADMIN: [
+    MANGAKA: [
       { path: "/dashboard", label: "Bảng điều khiển", icon: LayoutGrid },
       { path: "/manage", label: "Quản lý Tác phẩm", icon: LibraryBig },
       {
@@ -37,6 +39,13 @@ export const Sidebar = () => {
       },
       { path: "/schedule", label: "Lịch trình Xuất bản", icon: CalendarDays },
       { path: "/reports", label: "Báo cáo Kinh doanh", icon: TrendingUp },
+    ],
+    ADMIN: [
+      { path: "/dashboard", label: "Bảng điều khiển", icon: LayoutGrid },
+      { path: "/approve", label: "Xét duyệt dự án mới", icon: ClipboardCheck },
+      { path: "/rate", label: "Đánh giá & sinh tồn", icon: TrendingUp },
+      { path: "/management", label: "Quản lý số tạp chí", icon: BookOpen },
+      { path: "/finance", label: "Tài chính & hợp đồng", icon: Banknote },
     ],
   };
 
@@ -55,7 +64,7 @@ export const Sidebar = () => {
           </div>
         </div>
 
-        {currentRole === "ADMIN" && (
+        {currentRole === "MANGAKA" && (
           <button className="create-btn">
             <Plus size={18} />
             <span>Tạo Tác phẩm Mới</span>
