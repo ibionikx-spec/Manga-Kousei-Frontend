@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./LoginPage.css";
+import "./LoginPage.scss";
 import { getErrorMessage } from "../utils/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";

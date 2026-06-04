@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Search, CircleHelp, MessageSquareText, Bell } from "lucide-react";
-import "./Header.css";
+import "./Header.scss";
 
 export const Header = () => {
   const { user } = useAuth();

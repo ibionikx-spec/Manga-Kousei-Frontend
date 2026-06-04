@@ -29,10 +29,10 @@
   width: 100%;
   font-size: 14px;
   color: #374151;
-}
 
-.search-input::placeholder {
-  color: #9ca3af;
+  &::placeholder {
+    color: #9ca3af;
+  }
 }
 
 .header-right {
@@ -66,10 +66,10 @@
   justify-content: center;
   position: relative;
   padding: 4px;
-}
 
-.icon-btn:hover {
-  color: #111827;
+  &:hover {
+    color: #111827;
+  }
 }
 
 .chat-btn {
