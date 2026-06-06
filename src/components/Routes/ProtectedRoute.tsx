@@ -8,7 +8,6 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const { user, loading, isAuthenticated } = useAuth();
-  console.log(user, loading, isAuthenticated);
 
   if (loading) {
     return <FullScreenLoader text="Đang kiểm tra quyền truy cập..." />;

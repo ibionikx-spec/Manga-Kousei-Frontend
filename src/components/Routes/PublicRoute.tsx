@@ -1,7 +1,10 @@
 import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 export const PublicRoute = () => {
-  const accessToken = sessionStorage.getItem("accessToken");
+  const { user, loading } = useAuth();
 
-  return accessToken ? <Navigate to="/dashboard" replace /> : <Outlet />;
+  if (loading) return null;
+
+  return user ? <Navigate to="/dashboard" replace /> : <Outlet />;
 };
