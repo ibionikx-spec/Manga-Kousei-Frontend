@@ -1,5 +1,7 @@
 .sidebar-container {
   width: 260px;
+  min-width: 260px;
+  flex-shrink: 0;
   background-color: #000000;
   color: #ffffff;
   display: flex;
