@@ -89,10 +89,10 @@ export default function AdminSurvival() {
               <strong>48:12:03</strong>
             </div>
             <button className="notification-button" aria-label="Thông báo" type="button">
-              ♧
+              !
             </button>
             <div className="user-avatar" aria-label="Biên tập viên Ryo">
-              <span>亮</span>
+              <span>R</span>
             </div>
           </div>
         </header>
@@ -130,14 +130,14 @@ export default function AdminSurvival() {
           </article>
 
           <article className="analytics-card stats-card">
-            <div className="card-kicker">✥</div>
+            <div className="card-kicker">+</div>
             <strong>2.4M</strong>
             <span>TỔNG LƯỢT XEM TRỰC TUYẾN</span>
             <em>+12.5%</em>
           </article>
 
           <article className="analytics-card danger-card">
-            <div className="danger-card__icon">△</div>
+            <div className="danger-card__icon">!</div>
             <div>
               <h2>Cấp độ Đỏ</h2>
               <p>ĐANG TRONG VÙNG NGUY CẤP</p>
@@ -151,11 +151,11 @@ export default function AdminSurvival() {
             <h2>BẢNG TỔNG HỢP XẾP HẠNG MANGA (THÁNG 10)</h2>
             <div className="table-panel__tools">
               <label className="search-box">
-                <span aria-hidden="true">⌕</span>
+                <span aria-hidden="true">Tìm</span>
                 <input placeholder="Tìm kiếm tựa truyện..." type="search" />
               </label>
               <button className="filter-button" type="button">
-                <span aria-hidden="true">≡</span>
+                <span aria-hidden="true">|||</span>
                 Lọc
               </button>
             </div>
@@ -183,7 +183,7 @@ export default function AdminSurvival() {
 
                 <div className={`manga-row__rank manga-row__rank--${manga.rankTone}`}>
                   {manga.rank}
-                  <span>{manga.rankTone === "up" ? "↗" : manga.rankTone === "danger" ? "⌁" : "—"}</span>
+                  <span>{manga.rankTone === "up" ? "↑" : manga.rankTone === "danger" ? "!" : "-"}</span>
                 </div>
 
                 <div className="manga-row__inventory">
@@ -222,13 +222,13 @@ export default function AdminSurvival() {
           <footer className="table-panel__footer">
             <p>Hiển thị 3 trên tổng số 48 dự án đang lưu hành.</p>
             <nav className="pagination" aria-label="Phân trang">
-              <button type="button">‹</button>
+              <button type="button">Prev</button>
               <button className="is-active" type="button">
                 1
               </button>
               <button type="button">2</button>
               <button type="button">3</button>
-              <button type="button">›</button>
+              <button type="button">Next</button>
             </nav>
           </footer>
         </section>

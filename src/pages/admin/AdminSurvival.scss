@@ -1,5 +1,15 @@
+.sidebar-container {
+  flex: 0 0 260px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+}
+
 .admin-survival {
+  width: 100%;
   min-height: 100%;
+  min-width: 0;
+  overflow: hidden;
   background: #f3f6fb;
   color: #122137;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
@@ -17,143 +27,11 @@
     cursor: pointer;
   }
 
-  .sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: 20;
-    display: flex;
-    width: 252px;
-    flex-direction: column;
-    background: #020812;
-    padding: 36px 18px 30px;
-    color: #ffffff;
-  }
-
-  .sidebar__brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 58px;
-    padding: 0 2px;
-
-    strong {
-      display: block;
-      color: #3b96ff;
-      font-size: 21px;
-      font-weight: 900;
-      line-height: 1;
-    }
-
-    small {
-      display: block;
-      margin-top: 5px;
-      color: #ffffff;
-      font-size: 10px;
-      font-weight: 850;
-      letter-spacing: 0.08em;
-    }
-  }
-
-  .sidebar__mark {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    place-items: center;
-    border-radius: 5px;
-    background: #1264d7;
-    color: #ffffff;
-    font-size: 18px;
-    font-weight: 950;
-    line-height: 1;
-  }
-
-  .sidebar__menu,
-  .sidebar__bottom {
-    display: grid;
-    gap: 13px;
-  }
-
-  .sidebar__item,
-  .sidebar__cta,
-  .sidebar__utility {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    gap: 13px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.9);
-    padding: 13px 15px;
-    text-align: left;
-    transition: background 180ms ease, box-shadow 180ms ease, color 180ms ease,
-      transform 180ms ease;
-
-    &:hover {
-      background: rgba(19, 104, 221, 0.78);
-      color: #ffffff;
-      transform: translateX(3px);
-    }
-
-    span:last-child,
-    & {
-      font-size: 12px;
-      font-weight: 800;
-      line-height: 1.25;
-    }
-  }
-
-  .sidebar__item.is-active,
-  .sidebar__cta {
-    background: #0d67df;
-    box-shadow: 0 16px 28px rgba(13, 103, 223, 0.28);
-    color: #ffffff;
-  }
-
-  .sidebar__icon {
-    position: relative;
-    flex: 0 0 auto;
-    width: 18px;
-    height: 18px;
-
-    &::before,
-    &::after {
-      position: absolute;
-      border: 2px solid currentColor;
-      content: "";
-    }
-
-    &::before {
-      inset: 2px 9px 9px 2px;
-      border-radius: 2px;
-    }
-
-    &::after {
-      inset: 9px 2px 2px 9px;
-      border-radius: 2px;
-    }
-  }
-
-  .sidebar__bottom {
-    margin-top: auto;
-  }
-
-  .sidebar__cta {
-    justify-content: flex-start;
-    min-height: 54px;
-  }
-
-  .sidebar__utility {
-    color: rgba(255, 255, 255, 0.78);
-
-    &--danger {
-      color: #ff3434;
-    }
-  }
-
   .admin-survival__content {
+    width: 100%;
     min-height: 100%;
-    padding: 30px 38px 42px;
+    min-width: 0;
+    padding: 30px clamp(18px, 3vw, 38px) 42px;
   }
 
   .top-header {
@@ -187,7 +65,9 @@
 
   .top-header__actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 22px;
   }
 
@@ -250,7 +130,7 @@
 
   .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(560px, 1fr) 308px;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 308px);
     gap: 24px;
     margin-bottom: 38px;
   }
@@ -276,6 +156,7 @@
 
   .chart-card__head {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 22px;
 
@@ -467,7 +348,8 @@
   }
 
   .table-panel {
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     border: 1px solid #c8d2e4;
     border-radius: 9px;
     background: #ffffff;
@@ -502,11 +384,20 @@
     display: flex;
     align-items: center;
     gap: 11px;
-    width: 285px;
+    width: min(285px, 32vw);
+    min-width: 190px;
     border: 1px solid #647085;
     background: #ffffff;
     padding: 0 14px;
     color: #25364e;
+
+    > span {
+      flex: 0 0 auto;
+      color: #647085;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
 
     input {
       width: 100%;
@@ -543,13 +434,13 @@
   }
 
   .ranking-table {
-    min-width: 980px;
+    min-width: 1080px;
   }
 
   .ranking-table__head,
   .manga-row {
     display: grid;
-    grid-template-columns: minmax(260px, 1.35fr) 150px 145px 155px 150px 250px;
+    grid-template-columns: minmax(260px, 1.35fr) 150px 145px 155px 150px 230px;
     align-items: center;
     column-gap: 22px;
     padding: 0 28px;
@@ -794,7 +685,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-    min-width: 980px;
+    min-width: 1080px;
     background: #f7f9fd;
     padding: 22px 28px;
 
@@ -812,7 +703,7 @@
 
     button {
       display: grid;
-      width: 38px;
+      min-width: 38px;
       height: 38px;
       place-items: center;
       border: 1px solid #c8d2e3;
@@ -821,6 +712,7 @@
       color: #25364e;
       font-size: 14px;
       font-weight: 850;
+      padding: 0 10px;
       transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 
       &:hover,
@@ -868,6 +760,61 @@
 
     .dashboard-grid {
       grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-survival {
+    overflow-x: hidden;
+
+    .admin-survival__content {
+      padding: 22px 14px 32px;
+    }
+
+    .top-header__copy {
+      h1 {
+        font-size: 25px;
+      }
+
+      p {
+        align-items: flex-start;
+        font-size: 13px;
+      }
+    }
+
+    .top-header__actions,
+    .table-panel__header,
+    .table-panel__tools,
+    .chart-card__head {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .top-header__actions {
+      justify-content: flex-start;
+    }
+
+    .countdown-card,
+    .search-box,
+    .filter-button {
+      width: 100%;
+    }
+
+    .chart-card {
+      padding: 24px 18px 22px;
+    }
+
+    .chart-card__plot {
+      gap: 14px;
+    }
+
+    .table-panel__header {
+      padding: 24px 18px;
+
+      h2 {
+        font-size: 19px;
+      }
     }
   }
 }
