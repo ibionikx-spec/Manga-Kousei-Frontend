@@ -1,5 +1,5 @@
 .admin-survival {
-  min-height: 100vh;
+  min-height: 100%;
   background: #f3f6fb;
   color: #122137;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
@@ -152,9 +152,7 @@
   }
 
   .admin-survival__content {
-    height: 100vh;
-    margin-left: 252px;
-    overflow: auto;
+    min-height: 100%;
     padding: 30px 38px 42px;
   }
 

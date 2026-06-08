@@ -1,4 +1,4 @@
-import "./AminSurvival.scss";
+import "./AdminSurvival.scss";
 import type { CSSProperties } from "react";
 
 type MangaRank = {
@@ -14,14 +14,6 @@ type MangaRank = {
   secondaryAction?: string;
   coverTone: "blue" | "gold" | "dark";
 };
-
-const menuItems = [
-  "Tổng quan Tòa soạn",
-  "Xét duyệt Dự án mới",
-  "Đánh giá & Sinh tồn",
-  "Quản lý Số Tạp chí",
-  "Tài chính & Hợp đồng",
-];
 
 const chartBars = [
   { label: "Tuần 1", value: 62 },
@@ -81,46 +73,6 @@ const statusLabels = {
 export default function AdminSurvival() {
   return (
     <main className="admin-survival">
-      <aside className="sidebar">
-        <div className="sidebar__brand">
-          <span className="sidebar__mark">少</span>
-          <div>
-            <strong>Manga Kousei</strong>
-            <small>PRODUCTION STUDIO</small>
-          </div>
-        </div>
-
-        <nav className="sidebar__menu" aria-label="Admin navigation">
-          {menuItems.map((item) => (
-            <button
-              className={`sidebar__item ${
-                item === "Đánh giá & Sinh tồn" ? "is-active" : ""
-              }`}
-              key={item}
-              type="button"
-            >
-              <span className="sidebar__icon" aria-hidden="true" />
-              <span>{item}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="sidebar__bottom">
-          <button className="sidebar__cta" type="button">
-            <span>＋</span>
-            Khởi tạo Dự án
-          </button>
-          <button className="sidebar__utility" type="button">
-            <span>⚙</span>
-            Cài đặt Hệ thống
-          </button>
-          <button className="sidebar__utility sidebar__utility--danger" type="button">
-            <span>↪</span>
-            Đăng xuất
-          </button>
-        </div>
-      </aside>
-
       <section className="admin-survival__content">
         <header className="top-header">
           <div className="top-header__copy">
