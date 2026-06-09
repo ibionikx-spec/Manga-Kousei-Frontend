@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { ConfirmDialog } from "../dialog/ConfirmDialog";
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import "./Sidebar.scss";
+import { useLogout } from "../../hooks/useLogout";
 
 interface MenuItem {
   path: string;
@@ -28,8 +28,13 @@ interface MenuItem {
 }
 
 export const Sidebar = () => {
-  const { user, logout } = useAuth();
-  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+  const { user } = useAuth();
+  const {
+    showConfirmLogout,
+    handleLogoutClick,
+    handleConfirmLogout,
+    handleCancelLogout,
+  } = useLogout();
 
   const currentRole = user?.role || "";
 
@@ -102,19 +107,6 @@ export const Sidebar = () => {
   };
 
   const currentMenus = menuConfig[currentRole] || [];
-
-  const handleLogoutClick = () => {
-    setShowConfirmLogout(true);
-  };
-
-  const handleConfirmLogout = async () => {
-    setShowConfirmLogout(false);
-    await logout();
-  };
-
-  const handleCancelLogout = () => {
-    setShowConfirmLogout(false);
-  };
 
   return (
     <>

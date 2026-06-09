@@ -135,7 +135,10 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
   border-radius: $radius-2xl;
   background: $color-bg-white;
   box-shadow: $shadow-card;
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease,
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
     background 180ms ease;
 
   &:hover {
@@ -198,7 +201,9 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
       display: block;
       height: 100%;
       background: $color-progress-fill;
-      transition: width 260ms ease, background 180ms ease;
+      transition:
+        width 260ms ease,
+        background 180ms ease;
     }
   }
 
@@ -218,7 +223,9 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
   line-height: 1.1;
   font-weight: $font-weight-black;
   text-transform: uppercase;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .status-ready {
@@ -272,7 +279,10 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
     font-size: $font-size-xs;
     font-weight: $font-weight-black;
     text-transform: uppercase;
-    transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    transition:
+      background 180ms ease,
+      color 180ms ease,
+      transform 180ms ease;
 
     &:hover {
       background: #ffffff;
@@ -294,7 +304,10 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
   border-radius: $radius-2xl;
   background: $color-bg-white;
   box-shadow: $shadow-card;
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 
   &:hover {
     border-color: #afbfd5;
@@ -563,7 +576,10 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
     background: $color-bg-white;
     color: #314055;
     cursor: pointer;
-    transition: border-color 180ms ease, color 180ms ease, transform 180ms ease,
+    transition:
+      border-color 180ms ease,
+      color 180ms ease,
+      transform 180ms ease,
       box-shadow 180ms ease;
 
     &:hover {
@@ -591,7 +607,10 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
   background: $color-bg-mist;
   text-align: center;
   text-transform: uppercase;
-  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease,
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease,
     box-shadow 180ms ease;
 
   &:hover {
@@ -634,8 +653,12 @@ $shadow-button: 4px 4px 0 rgba(255, 255, 255, 0.22);
     cursor: pointer;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
-    transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease,
-      color 180ms ease, transform 180ms ease;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      color 180ms ease,
+      transform 180ms ease;
 
     span {
       max-width: 82px;
