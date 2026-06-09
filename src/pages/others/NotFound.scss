@@ -63,37 +63,12 @@
   .action-row {
     display: flex;
     gap: 16px;
+    align-items: flex-start;
 
     .home-action-wrapper {
       position: relative;
       display: flex;
       flex-direction: column;
-
-      .logout-note {
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-top: 12px;
-        display: flex;
-        align-items: flex-start;
-        gap: 6px;
-        color: #94a3b8;
-        width: 220px;
-        text-align: right;
-        animation: float-note 3s ease-in-out infinite;
-
-        .note-text {
-          font-size: 12px;
-          line-height: 1.5;
-          font-style: italic;
-        }
-
-        .arrow-icon {
-          color: #cbd5e1;
-          margin-top: -6px;
-          flex-shrink: 0;
-        }
-      }
     }
 
     .btn {
@@ -133,6 +108,31 @@
           box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
       }
+    }
+  }
+  .logout-note {
+    position: absolute;
+    top: 76%;
+    left: 52%;
+    margin-top: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: #94a3b8;
+    width: 220px;
+    text-align: right;
+    animation: float-note 3s ease-in-out infinite;
+
+    .note-text {
+      font-size: 12px;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .arrow-icon {
+      color: #cbd5e1;
+      margin-top: -6px;
+      flex-shrink: 0;
     }
   }
 }
