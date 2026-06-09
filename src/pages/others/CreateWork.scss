@@ -221,6 +221,118 @@
   }
 }
 
+.cw-image-upload {
+  margin-top: 8px;
+}
+
+.cw-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #0254b1;
+    background: #eff6ff;
+    color: #0254b1;
+  }
+}
+
+.cw-image-preview {
+  position: relative;
+  display: inline-block;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+
+  img {
+    max-width: 280px;
+    max-height: 180px;
+    object-fit: cover;
+    display: block;
+  }
+
+  button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    border-radius: 20px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+}
+
+.cw-upload-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+.cw-review__image {
+  margin-top: 12px;
+  img {
+    max-width: 100%;
+    max-height: 240px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    object-fit: contain;
+    background: #f8fafc;
+  }
+}
+
+.cw-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 20px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #0254b1;
+    background: #eff6ff;
+  }
+
+  &--active {
+    border-color: #0254b1;
+    background: #e0f2fe;
+  }
+
+  svg {
+    color: #64748b;
+  }
+
+  span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+  }
+}
+
 .cw-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -300,42 +412,6 @@
     background: #eff6ff;
     padding: 4px 10px;
     border-radius: 4px;
-  }
-}
-
-.cw-chapters {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.cw-chapter-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px 24px;
-  background: #fafbfc;
-  transition: border-color 0.2s;
-
-  &:hover {
-    border-color: #bfdbfe;
-  }
-
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  &__num {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 12px;
-    font-weight: 800;
-    color: #334155;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
   }
 }
 

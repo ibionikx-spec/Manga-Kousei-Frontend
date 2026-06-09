@@ -7,10 +7,11 @@ import {
   Users,
   Send,
   Plus,
-  Trash2,
   CheckCircle2,
   AlertCircle,
   X,
+  UploadCloud,
+  Image,
 } from "lucide-react";
 import "./CreateWork.scss";
 
@@ -21,13 +22,6 @@ interface Character {
   description: string;
 }
 
-interface Chapter {
-  id: number;
-  title: string;
-  pages: number;
-  summary: string;
-}
-
 interface FormData {
   title: string;
   genre: string[];
@@ -36,9 +30,9 @@ interface FormData {
 
   characters: Character[];
 
-  chapters: Chapter[];
-
-  note: string;
+  nameSummary: string;
+  sketchImage: File | null;
+  sketchPreview: string;
 }
 
 const GENRES = [
@@ -83,14 +77,16 @@ const STEPS = [
 export default function CreateWork() {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [form, setForm] = useState<FormData>({
     title: "",
     genre: [],
     targetAudience: "",
     synopsis: "",
     characters: [{ id: 1, name: "", role: "", description: "" }],
-    chapters: [{ id: 1, title: "", pages: 20, summary: "" }],
-    note: "",
+    nameSummary: "",
+    sketchImage: null,
+    sketchPreview: "",
   });
 
   const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) =>
@@ -120,26 +116,6 @@ export default function CreateWork() {
       form.characters.map((c) => (c.id === id ? { ...c, [key]: value } : c)),
     );
 
-  const addChapter = () =>
-    updateField("chapters", [
-      ...form.chapters,
-      { id: Date.now(), title: "", pages: 20, summary: "" },
-    ]);
-  const removeChapter = (id: number) =>
-    updateField(
-      "chapters",
-      form.chapters.filter((c) => c.id !== id),
-    );
-  const updateChapter = (
-    id: number,
-    key: keyof Chapter,
-    value: string | number,
-  ) =>
-    updateField(
-      "chapters",
-      form.chapters.map((c) => (c.id === id ? { ...c, [key]: value } : c)),
-    );
-
   const isStep1Valid =
     form.title.trim().length > 0 &&
     form.genre.length > 0 &&
@@ -150,9 +126,7 @@ export default function CreateWork() {
     (c) => c.name.trim() && c.role.trim(),
   );
 
-  const isStep3Valid = form.chapters.every(
-    (c) => c.title.trim() && c.summary.trim(),
-  );
+  const isStep3Valid = true;
 
   const canProceed =
     (step === 1 && isStep1Valid) ||
@@ -161,6 +135,64 @@ export default function CreateWork() {
     step === 4;
 
   const handleSubmit = () => setSubmitted(true);
+
+  const handleImageUpload = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ảnh không được vượt quá 5MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file ảnh (jpg, png, webp...)");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    updateField("sketchImage", file);
+    updateField("sketchPreview", previewUrl);
+  };
+
+  const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageUpload(file);
+  };
+
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleImageUpload(file);
+  };
+
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const removeImage = () => {
+    if (form.sketchPreview) URL.revokeObjectURL(form.sketchPreview);
+    updateField("sketchImage", null);
+    updateField("sketchPreview", "");
+  };
+
+  const resetForm = () => {
+    if (form.sketchPreview) URL.revokeObjectURL(form.sketchPreview);
+    setSubmitted(false);
+    setStep(1);
+    setForm({
+      title: "",
+      genre: [],
+      targetAudience: "",
+      synopsis: "",
+      characters: [{ id: 1, name: "", role: "", description: "" }],
+      nameSummary: "",
+      sketchImage: null,
+      sketchPreview: "",
+    });
+  };
 
   if (submitted) {
     return (
@@ -183,22 +215,7 @@ export default function CreateWork() {
               Trạng thái: <strong className="pending">Chờ duyệt</strong>
             </span>
           </div>
-          <button
-            className="cw-btn cw-btn--primary"
-            onClick={() => {
-              setSubmitted(false);
-              setStep(1);
-              setForm({
-                title: "",
-                genre: [],
-                targetAudience: "",
-                synopsis: "",
-                characters: [{ id: 1, name: "", role: "", description: "" }],
-                chapters: [{ id: 1, title: "", pages: 20, summary: "" }],
-                note: "",
-              });
-            }}
-          >
+          <button className="cw-btn cw-btn--primary" onClick={resetForm}>
             Tạo bản Name mới
           </button>
         </div>
@@ -394,86 +411,70 @@ export default function CreateWork() {
 
         {step === 3 && (
           <div className="cw-section">
-            <div className="cw-section__head">
-              <div>
-                <h2 className="cw-section__title">
-                  Bản Name — Chương phác thảo
-                </h2>
-                <p className="cw-section__sub">
-                  Tối thiểu 1 chương. Admin sẽ đánh giá dựa trên các chương này.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="cw-btn cw-btn--ghost"
-                onClick={addChapter}
-              >
-                <Plus size={16} /> Thêm chương
-              </button>
-            </div>
+            <h2 className="cw-section__title">Bản Name – Phác thảo ý tưởng</h2>
+            <p
+              className="cw-section__sub"
+              style={{ marginTop: -20, marginBottom: 24 }}
+            >
+              Cung cấp thông tin về bản Name. Ban Biên tập sẽ đánh giá dựa trên
+              các thông tin này.
+            </p>
 
-            <div className="cw-chapters">
-              {form.chapters.map((ch, idx) => (
-                <div key={ch.id} className="cw-chapter-card">
-                  <div className="cw-chapter-card__header">
-                    <div className="cw-chapter-card__num">
-                      <FileText size={14} />
-                      Chương {idx + 1}
-                    </div>
-                    {form.chapters.length > 1 && (
-                      <button
-                        type="button"
-                        className="cw-icon-btn cw-icon-btn--danger"
-                        onClick={() => removeChapter(ch.id)}
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    )}
+            <div className="cw-field">
+              <label>Phác thảo bản Name (hình minh hoạ)</label>
+              <div className="cw-image-upload">
+                {form.sketchPreview ? (
+                  <div className="cw-image-preview">
+                    <img src={form.sketchPreview} alt="Phác thảo bản Name" />
+                    <button
+                      type="button"
+                      className="cw-icon-btn cw-icon-btn--danger"
+                      onClick={removeImage}
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-
-                  <div className="cw-row">
-                    <div className="cw-field" style={{ flex: 2 }}>
-                      <label>
-                        Tiêu đề chương <span className="req">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder='VD: "Bắt đầu của bóng tối"'
-                        value={ch.title}
-                        onChange={(e) =>
-                          updateChapter(ch.id, "title", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="cw-field" style={{ flex: 1 }}>
-                      <label>Số trang dự kiến</label>
-                      <input
-                        type="number"
-                        min={8}
-                        max={60}
-                        value={ch.pages}
-                        onChange={(e) =>
-                          updateChapter(ch.id, "pages", Number(e.target.value))
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="cw-field">
-                    <label>
-                      Tóm tắt nội dung <span className="req">*</span>
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder="Diễn biến chính của chương: mở đầu, xung đột, kết thúc..."
-                      value={ch.summary}
-                      onChange={(e) =>
-                        updateChapter(ch.id, "summary", e.target.value)
-                      }
+                ) : (
+                  <div
+                    className={`cw-dropzone ${isDragActive ? "cw-dropzone--active" : ""}`}
+                    onClick={() =>
+                      document.getElementById("sketch-upload")?.click()
+                    }
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                  >
+                    <UploadCloud size={24} />
+                    <span>
+                      {isDragActive
+                        ? "Thả ảnh vào đây"
+                        : "Chọn hoặc kéo thả ảnh phác thảo"}
+                    </span>
+                    <input
+                      id="sketch-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={onFileInputChange}
+                      hidden
                     />
                   </div>
-                </div>
-              ))}
+                )}
+                <p className="cw-upload-hint">
+                  Hỗ trợ JPG, PNG, WebP. Tối đa 5MB.
+                </p>
+              </div>
+            </div>
+            <div className="cw-field">
+              <label>Tóm tắt nội dung bản Name</label>
+              <textarea
+                rows={4}
+                placeholder="Mô tả sơ lược nội dung chính của bản Name (không bắt buộc)..."
+                value={form.nameSummary}
+                onChange={(e) => updateField("nameSummary", e.target.value)}
+              />
+              <span className="char-count">
+                {form.nameSummary.length} ký tự
+              </span>
             </div>
           </div>
         )}
@@ -527,27 +528,26 @@ export default function CreateWork() {
 
               <div className="cw-review__block">
                 <h3>
-                  <FileText size={16} /> Bản Name ({form.chapters.length}{" "}
-                  chương)
+                  <FileText size={16} /> Bản Name
                 </h3>
-                {form.chapters.map((c, i) => (
-                  <div key={c.id} className="cw-review__chapter">
-                    <span className="ch-num">Ch.{i + 1}</span>
-                    <span className="ch-title">{c.title || "—"}</span>
-                    <span className="ch-pages">{c.pages} trang</span>
-                  </div>
-                ))}
+                <div className="cw-review__grid">
+                  <span className="label">Tóm tắt nội dung</span>
+                  <span className="value synopsis">
+                    {form.nameSummary || "—"}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="cw-field" style={{ marginTop: 24 }}>
-              <label>Ghi chú thêm cho Ban Biên tập</label>
-              <textarea
-                rows={3}
-                placeholder="Tham khảo, nguồn cảm hứng, yêu cầu đặc biệt..."
-                value={form.note}
-                onChange={(e) => updateField("note", e.target.value)}
-              />
+              {form.sketchPreview && (
+                <div className="cw-review__block">
+                  <h3>
+                    <Image size={16} /> Phác thảo bản Name
+                  </h3>
+                  <div className="cw-review__image">
+                    <img src={form.sketchPreview} alt="phác thảo" />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="cw-notice">
