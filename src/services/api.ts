@@ -31,13 +31,12 @@ api.interceptors.response.use(
     console.log("Ma loi", error.response?.status);
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      const errorData = error.response?.data;
+
       if (
         originalRequest.url?.includes("/auth/refresh") ||
         originalRequest.url?.includes("/auth/login")
       ) {
-        if (originalRequest.url?.includes("/auth/refresh")) {
-          window.location.href = "/login";
-        }
         return Promise.reject(error);
       }
 
@@ -50,6 +49,15 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      if (errorData?.shouldRefresh === false) {
+        isRefreshing = false;
+        processQueue(error);
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+
       try {
         await api.post("/auth/refresh");
 
@@ -57,7 +65,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        window.location.href = "/login";
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

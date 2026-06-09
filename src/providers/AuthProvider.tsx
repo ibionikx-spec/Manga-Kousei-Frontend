@@ -13,7 +13,6 @@ interface User {
   role: Role;
   avatarUrl: string | null;
 }
-const publicRoutes = ["/login", "/"];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,8 +21,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (publicRoutes.includes(location.pathname)) return;
-
         const response = await api.get("/auth/me");
 
         const { id, fullName, email, roles, avatarUrl } = response.data.data;
