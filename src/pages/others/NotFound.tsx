@@ -46,16 +46,14 @@ export const NotFound = () => {
               <Home size={20} strokeWidth={1.5} />
               <span>Về Trang chủ</span>
             </button>
-
-            <div className="logout-note">
-              <CornerLeftUp className="arrow-icon" size={16} strokeWidth={2} />
-              <span className="note-text">
-                Nếu bạn đã đăng nhập, chúng tôi sẽ đăng xuất bạn để đảm bảo an
-                toàn.
-              </span>
-            </div>
           </div>
         </div>
+      </div>
+      <div className="logout-note">
+        <CornerLeftUp className="arrow-icon" size={16} strokeWidth={2} />
+        <span className="note-text">
+          Nếu bạn đã đăng nhập, chúng tôi sẽ đăng xuất bạn để đảm bảo an toàn.
+        </span>
       </div>
     </div>
   );

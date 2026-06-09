@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { ConfirmDialog } from "../dialog/ConfirmDialog";
+
 import {
   PenTool,
-  Plus,
   LayoutGrid,
   LibraryBig,
   ClipboardCheck,
@@ -16,6 +16,7 @@ import {
   Calendar,
   Users,
   LineChart,
+  Plus,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import "./Sidebar.scss";
@@ -123,10 +124,15 @@ export const Sidebar = () => {
           </div>
 
           {["MANGAKA", "TANTOU"].includes(currentRole) && (
-            <button className="create-btn">
+            <NavLink
+              to={`${currentRole.toLowerCase()}/create-work`}
+              className={({ isActive }) =>
+                `create-btn ${isActive ? "active" : ""}`
+              }
+            >
               <Plus size={18} />
               <span>Tạo Tác phẩm Mới</span>
-            </button>
+            </NavLink>
           )}
 
           <nav className="menu-nav">
