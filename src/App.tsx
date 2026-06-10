@@ -21,7 +21,7 @@ import MangakaSeries from "./pages/mangaka/MangakaSeries";
 import MangakaSchedule from "./pages/mangaka/MangakaSchedule";
 import MangakaAssistants from "./pages/mangaka/MangakaAssistants";
 import MangakaReports from "./pages/mangaka/MangakaReports";
-import CreateWork from "./pages/others/CreateWork";
+import CreateWork from "./pages/CreateWork/CreateWork";
 
 function App() {
   return (
