@@ -1,3 +1,268 @@
+import { useState } from "react";
+import {
+  AlertTriangle,
+  Clock,
+  ChevronRight,
+  RefreshCw,
+  InboxIcon,
+  Eye,
+  Activity,
+  CheckCircle,
+  Circle,
+  CalendarDays,
+} from "lucide-react";
+import "./TantouDashboard.scss";
+
+const DEADLINES = [
+  {
+    id: 1,
+    label: "QUÁ HẠN",
+    labelType: "overdue",
+    timeTag: "Hôm qua",
+    title: "Bản Name - Chương 42",
+    author: "Yamamoto",
+    series: "Thợ Săn Mực",
+  },
+  {
+    id: 2,
+    label: "ĐẾN HẠN",
+    labelType: "due",
+    timeTag: "Hôm nay 18:00",
+    title: "Genga - Chương 15",
+    author: "Sato",
+    series: "Thành phố Cát",
+  },
+  {
+    id: 3,
+    label: "SẮP ĐẾN",
+    labelType: "soon",
+    timeTag: "Ngày mai",
+    title: "Tone - Chương 28",
+    author: "Inoue",
+    series: "Kiếm Khách Đêm",
+  },
+];
+
+const INBOX = [
+  {
+    id: 1,
+    series: "Kỵ sĩ Bóng đêm",
+    content: "Bản Name - Ch. 89",
+    submittedBy: "Tanaka",
+    status: "pending",
+    statusLabel: "CHỜ DUYỆT",
+  },
+  {
+    id: 2,
+    series: "Thiên Hà Vỡ",
+    content: "Genga - Ch. 12",
+    submittedBy: "Suzuki",
+    status: "pending",
+    statusLabel: "CHỜ DUYỆT",
+  },
+  {
+    id: 3,
+    series: "Học viện Pháp thuật",
+    content: "Bản Phác thảo Bìa Vol 4",
+    submittedBy: "Miki",
+    status: "approved",
+    statusLabel: "ĐÃ DUYỆT (BẢN THẢO BÌA)",
+  },
+];
+
+const ACTIVITIES = [
+  {
+    id: 1,
+    done: true,
+    title: "Series A: Storyboard hoàn thành",
+    meta: "Bởi Mangaka X · 2 giờ trước",
+  },
+  {
+    id: 2,
+    done: false,
+    title: "Series B: Đang chờ đánh giá",
+    meta: "Genga Ch. 3 · 5 giờ trước",
+  },
+  {
+    id: 3,
+    done: false,
+    title: "Thợ Săn Mực: Yêu cầu sửa đổi",
+    meta: "Tantou Y gửi phản hồi · 1 ngày trước",
+  },
+];
+
+const PROGRESS = [
+  { label: "Bản Name", pct: 80, color: "#1d4ed8" },
+  { label: "Genga", pct: 45, color: "#1d4ed8" },
+  { label: "Hoàn thiện & Typeset", pct: 20, color: "#1d4ed8" },
+];
+
 export default function TantouDashboard() {
-  return <div>TantouDashboard</div>;
+  const [month] = useState("Tháng 10, 2023");
+  const pendingCount = INBOX.filter((i) => i.status === "pending").length;
+
+  return (
+    <div className="td-page">
+      <div className="td-header">
+        <div className="td-header__left">
+          <h1>Tổng quan Tòa soạn</h1>
+          <p>Theo dõi tiến độ và các mốc thời gian quan trọng.</p>
+        </div>
+        <div className="td-header__badge">
+          <CalendarDays size={14} strokeWidth={2} />
+          {month}
+        </div>
+      </div>
+
+      <div className="td-grid">
+        <div className="td-col td-col--left">
+          <div className="td-card td-deadline">
+            <div className="td-deadline__header">
+              <AlertTriangle size={18} strokeWidth={2.5} />
+              <span>Cảnh báo Deadline</span>
+            </div>
+
+            <div className="td-deadline__list">
+              {DEADLINES.map((d) => (
+                <div
+                  key={d.id}
+                  className={`td-dl-item td-dl-item--${d.labelType}`}
+                >
+                  <div className="td-dl-item__top">
+                    <span className="td-dl-item__badge">{d.label}</span>
+                    <span className="td-dl-item__time">
+                      <Clock size={11} strokeWidth={2} />
+                      {d.timeTag}
+                    </span>
+                  </div>
+                  <p className="td-dl-item__title">{d.title}</p>
+                  <p className="td-dl-item__meta">
+                    Tác giả: {d.author} &nbsp;·&nbsp; Series:{" "}
+                    <em>{d.series}</em>
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <button className="td-deadline__cta">
+              Xem tất cả cảnh báo
+              <ChevronRight size={14} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          <div className="td-card td-activity">
+            <div className="td-card__head">
+              <div className="td-card__title">
+                <Activity size={15} strokeWidth={2} />
+                Hoạt động Gần đây
+              </div>
+            </div>
+
+            <ul className="td-activity__list">
+              {ACTIVITIES.map((a, i) => (
+                <li key={a.id} className="td-activity__item">
+                  <div
+                    className={`td-activity__dot ${a.done ? "td-activity__dot--done" : ""}`}
+                  >
+                    {a.done ? (
+                      <CheckCircle size={18} strokeWidth={2} />
+                    ) : (
+                      <Circle size={18} strokeWidth={1.5} />
+                    )}
+                    {i < ACTIVITIES.length - 1 && (
+                      <span className="td-activity__line" />
+                    )}
+                  </div>
+                  <div className="td-activity__body">
+                    <p className="td-activity__title">{a.title}</p>
+                    <p className="td-activity__meta">{a.meta}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="td-col td-col--right">
+          <div className="td-card td-inbox">
+            <div className="td-card__head">
+              <div className="td-card__title">
+                <InboxIcon size={15} strokeWidth={2} />
+                Hộp thư Phê duyệt
+              </div>
+              {pendingCount > 0 && (
+                <span className="td-inbox__badge">{pendingCount} Mới</span>
+              )}
+            </div>
+
+            <div className="td-inbox__table">
+              <div className="td-inbox__thead">
+                <span>SERIES</span>
+                <span>NỘI DUNG</span>
+                <span>TRẠNG THÁI</span>
+                <span>HÀNH ĐỘNG</span>
+              </div>
+
+              {INBOX.map((item) => (
+                <div key={item.id} className="td-inbox__row">
+                  <div className="td-inbox__series">
+                    <span className="td-inbox__series-name">{item.series}</span>
+                    <span className="td-inbox__submitted">
+                      Gửi bởi: {item.submittedBy}
+                    </span>
+                  </div>
+                  <span className="td-inbox__content">{item.content}</span>
+                  <span
+                    className={`td-inbox__status td-inbox__status--${item.status}`}
+                  >
+                    {item.statusLabel}
+                  </span>
+                  <button
+                    className={`td-inbox__action ${item.status === "approved" ? "td-inbox__action--text" : ""}`}
+                  >
+                    {item.status === "approved" ? (
+                      "Chi tiết"
+                    ) : (
+                      <>
+                        <Eye size={13} strokeWidth={2} /> Xem
+                      </>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="td-card td-progress">
+            <div className="td-card__head">
+              <div className="td-card__title">Tiến độ Phát hành Tháng</div>
+              <button className="td-progress__refresh" title="Làm mới">
+                <RefreshCw size={14} strokeWidth={2} />
+              </button>
+            </div>
+            <p className="td-progress__sub">
+              Tổng quan các đầu truyện đang chạy.
+            </p>
+
+            <div className="td-progress__list">
+              {PROGRESS.map((p) => (
+                <div key={p.label} className="td-progress__item">
+                  <div className="td-progress__item-top">
+                    <span className="td-progress__label">{p.label}</span>
+                    <span className="td-progress__pct">{p.pct}%</span>
+                  </div>
+                  <div className="td-progress__track">
+                    <div
+                      className="td-progress__fill"
+                      style={{ width: `${p.pct}%`, backgroundColor: p.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
