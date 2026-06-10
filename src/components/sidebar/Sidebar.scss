@@ -10,11 +10,64 @@
   height: 100vh;
   padding: 24px 20px;
   box-sizing: border-box;
-
+  will-change: width;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+
+  transition:
+    width 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+    min-width 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+    padding 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+
+  &.collapsed {
+    width: 80px;
+    min-width: 80px;
+    padding: 24px 12px;
+
+    .brand-logo {
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 0;
+      cursor: pointer;
+    }
+
+    .brand-text {
+      max-width: 0;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .create-btn {
+      gap: 0;
+      justify-content: center;
+      padding: 12px;
+
+      span {
+        max-width: 0;
+        opacity: 0;
+        visibility: hidden;
+        display: inline-block;
+      }
+    }
+
+    .menu-item {
+      justify-content: center;
+      gap: 0;
+      padding: 12px;
+
+      span {
+        max-width: 0;
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    .divider {
+      margin-bottom: 8px;
+    }
+  }
 }
 
 .sidebar-top {
@@ -28,6 +81,36 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+  cursor: pointer;
+  transition:
+    gap 0.25s ease,
+    margin-bottom 0.25s ease;
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0.25s;
+    max-width: 150px;
+    white-space: nowrap;
+
+    .brand-title {
+      color: #3b82f6;
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .brand-subtitle {
+      color: #d1d5db;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+  }
 }
 
 .icon-wrapper {
@@ -39,29 +122,9 @@
   align-items: center;
 }
 
-.brand-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-title {
-  color: #3b82f6;
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1.2;
-}
-
-.brand-subtitle {
-  color: #d1d5db;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
 .create-btn {
   background-color: #f3f4f6;
   color: #111827;
-  border: 1px solid transparent;
   border-radius: 6px;
   padding: 12px;
   display: flex;
@@ -73,24 +136,30 @@
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
+  white-space: nowrap;
+
+  span {
+    display: inline-block;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0.25s;
+    max-width: 200px;
+    overflow: hidden;
+  }
 
   svg {
-    color: #111827;
-    transition: color 0.2s;
+    flex-shrink: 0;
   }
 
   &:hover {
     background-color: #ffffff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
     transform: translateY(-1px);
   }
 
   &.active {
     background-color: #111827;
     color: #9ca3af;
-    border: 1px dashed #4b5563;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-    transform: translateY(0);
     pointer-events: none;
 
     svg {
@@ -115,17 +184,39 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    gap 0.25s ease,
+    padding 0.25s ease;
   cursor: pointer;
   background-color: transparent;
   border: none;
   width: 100%;
   text-align: left;
-
   position: relative;
+  white-space: nowrap;
+
+  span {
+    display: inline-block;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0.25s;
+    max-width: 200px;
+    overflow: hidden;
+  }
+
+  svg {
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
 
   &:hover {
     background-color: #1f2937;
+
+    svg {
+      transform: scale(1.05);
+    }
   }
 
   &.active {
@@ -166,4 +257,9 @@
   height: 1px;
   background-color: #374151;
   margin-bottom: 16px;
+  transition: margin-bottom 0.25s ease;
+}
+
+.logout-btn:hover svg {
+  transform: scale(1.05);
 }
