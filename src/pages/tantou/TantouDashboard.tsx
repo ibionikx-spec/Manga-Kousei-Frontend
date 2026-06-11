@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertTriangle,
   Clock,
@@ -10,8 +10,12 @@ import {
   CheckCircle,
   Circle,
   CalendarDays,
+  Loader2,
 } from "lucide-react";
 import "./TantouDashboard.scss";
+import { fetchInbox } from "../../services/tantouService";
+
+import type { InboxItem } from "../../services/tantouService";
 
 const DEADLINES = [
   {
@@ -40,33 +44,6 @@ const DEADLINES = [
     title: "Tone - Chương 28",
     author: "Inoue",
     series: "Kiếm Khách Đêm",
-  },
-];
-
-const INBOX = [
-  {
-    id: 1,
-    series: "Kỵ sĩ Bóng đêm",
-    content: "Bản Name - Ch. 89",
-    submittedBy: "Tanaka",
-    status: "pending",
-    statusLabel: "CHỜ DUYỆT",
-  },
-  {
-    id: 2,
-    series: "Thiên Hà Vỡ",
-    content: "Genga - Ch. 12",
-    submittedBy: "Suzuki",
-    status: "pending",
-    statusLabel: "CHỜ DUYỆT",
-  },
-  {
-    id: 3,
-    series: "Học viện Pháp thuật",
-    content: "Bản Phác thảo Bìa Vol 4",
-    submittedBy: "Miki",
-    status: "approved",
-    statusLabel: "ĐÃ DUYỆT (BẢN THẢO BÌA)",
   },
 ];
 
@@ -99,10 +76,53 @@ const PROGRESS = [
 
 export default function TantouDashboard() {
   const [month] = useState("Tháng 10, 2023");
-  const pendingCount = INBOX.filter((i) => i.status === "pending").length;
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [inboxRes] = await Promise.all([fetchInbox()]);
+
+        setInbox(inboxRes);
+      } catch (err) {
+        setError("Không thể tải dữ liệu. Vui lòng thử lại.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    console.log(inbox);
+  }, [inbox]);
+
+  const pendingCount = inbox.filter((i) => i.status === "pending").length;
+
+  if (loading) {
+    return (
+      <div className="td-page flex items-center justify-center h-64">
+        <Loader2 className="animate-spin mr-2" size={20} />
+        Đang tải dữ liệu...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="td-page flex items-center justify-center h-64 text-red-500">
+        <AlertTriangle size={18} className="mr-2" />
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="td-page">
+      {/* header giữ nguyên */}
       <div className="td-header">
         <div className="td-header__left">
           <h1>Tổng quan Tòa soạn</h1>
@@ -116,6 +136,7 @@ export default function TantouDashboard() {
 
       <div className="td-grid">
         <div className="td-col td-col--left">
+          {/* Deadlines */}
           <div className="td-card td-deadline">
             <div className="td-deadline__header">
               <AlertTriangle size={18} strokeWidth={2.5} />
@@ -203,10 +224,15 @@ export default function TantouDashboard() {
                 <span>HÀNH ĐỘNG</span>
               </div>
 
-              {INBOX.map((item) => (
-                <div key={item.id} className="td-inbox__row">
+              {inbox.map((item) => (
+                <div
+                  key={`${item.itemType}-${item.id}`}
+                  className="td-inbox__row"
+                >
                   <div className="td-inbox__series">
-                    <span className="td-inbox__series-name">{item.series}</span>
+                    <span className="td-inbox__series-name">
+                      {item.seriesTitle || "—"}
+                    </span>
                     <span className="td-inbox__submitted">
                       Gửi bởi: {item.submittedBy}
                     </span>
@@ -219,6 +245,13 @@ export default function TantouDashboard() {
                   </span>
                   <button
                     className={`td-inbox__action ${item.status === "approved" ? "td-inbox__action--text" : ""}`}
+                    onClick={() => {
+                      if (item.itemType === "manuscript") {
+                        window.location.href = `/approvals/manuscript/${item.id}`;
+                      } else if (item.itemType === "proposal") {
+                        window.location.href = `/proposals/${item.id}`;
+                      }
+                    }}
                   >
                     {item.status === "approved" ? (
                       "Chi tiết"
