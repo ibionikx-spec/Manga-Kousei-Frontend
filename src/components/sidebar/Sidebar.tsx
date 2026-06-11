@@ -18,6 +18,7 @@ import {
   Users,
   LineChart,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import "./Sidebar.scss";
@@ -49,6 +50,11 @@ export const Sidebar = () => {
         path: "tantou/approvals",
         label: "Không gian Phê duyệt",
         icon: ClipboardCheck,
+      },
+      {
+        path: "tantou/proposal-review",
+        label: "Đề xuất mới",
+        icon: Sparkles,
       },
       {
         path: "tantou/schedule",

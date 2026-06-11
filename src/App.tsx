@@ -22,6 +22,7 @@ import MangakaSchedule from "./pages/mangaka/MangakaSchedule";
 import MangakaAssistants from "./pages/mangaka/MangakaAssistants";
 import MangakaReports from "./pages/mangaka/MangakaReports";
 import CreateWork from "./pages/CreateWork/CreateWork";
+import ProposalReview from "./pages/tantou/ProposalReview/ProposalReview";
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             <Route path="dashboard" element={<TantouDashboard />} />
             <Route path="manage" element={<TantouManage />} />
             <Route path="approvals" element={<TantouApprovals />} />
+            <Route path="proposal-review" element={<ProposalReview />} />
             <Route path="schedule" element={<TantouSchedule />} />
             <Route path="reports" element={<TantouReports />} />
           </Route>
