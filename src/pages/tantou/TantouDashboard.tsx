@@ -122,7 +122,6 @@ export default function TantouDashboard() {
 
   return (
     <div className="td-page">
-      {/* header giữ nguyên */}
       <div className="td-header">
         <div className="td-header__left">
           <h1>Tổng quan Tòa soạn</h1>
@@ -136,7 +135,6 @@ export default function TantouDashboard() {
 
       <div className="td-grid">
         <div className="td-col td-col--left">
-          {/* Deadlines */}
           <div className="td-card td-deadline">
             <div className="td-deadline__header">
               <AlertTriangle size={18} strokeWidth={2.5} />

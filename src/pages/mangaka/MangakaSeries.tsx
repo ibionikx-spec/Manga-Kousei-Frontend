@@ -134,7 +134,6 @@ export default function MangakaSeries() {
 
   return (
     <div className="mangaka-series-page">
-      {/* ─── Hero header ─── */}
       <div className="series-hero">
         <div className="hero-text">
           <div className="breadcrumb">
@@ -156,7 +155,6 @@ export default function MangakaSeries() {
         </div>
       </div>
 
-      {/* ─── Toolbar ─── */}
       <div className="series-toolbar">
         <div className="search-box">
           <Search size={18} className="search-icon" />
@@ -185,7 +183,6 @@ export default function MangakaSeries() {
         </button>
       </div>
 
-      {/* ─── Series grid ─── */}
       <div className="series-grid">
         {filtered.map((work) => (
           <div
@@ -249,7 +246,6 @@ export default function MangakaSeries() {
         </div>
       )}
 
-      {/* ─── Pagination ─── */}
       <div className="pagination">
         <button className="page-btn">‹</button>
         <button className="page-btn active">1</button>
