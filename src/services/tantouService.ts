@@ -122,3 +122,15 @@ function validateStatus(s: string): ProposalStatus {
     ? (s as ProposalStatus)
     : "pending";
 }
+
+export const reviewProposal = (
+  id: number,
+  body: {
+    decision: "approve" | "revision" | "reject";
+    feedback?: string;
+    reason?: string;
+  },
+) => api.patch(`/tantou/proposals/${id}/review`, body);
+
+export const reopenProposal = (id: number) =>
+  api.patch(`/tantou/proposals/${id}/reopen`);

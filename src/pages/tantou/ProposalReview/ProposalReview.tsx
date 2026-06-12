@@ -19,7 +19,11 @@ import {
 import "./ProposalReview.scss";
 import { formatDate, timeAgo } from "../../../utils/date";
 import Section from "./Section";
-import { fetchProposals } from "../../../services/tantouService";
+import {
+  fetchProposals,
+  reopenProposal,
+  reviewProposal,
+} from "../../../services/tantouService";
 import { getAvatarColor, getInitials } from "../../../utils";
 import type {
   ProposalStatus,
@@ -302,6 +306,7 @@ export default function ProposalReview() {
   const [rejectionText, setRejectionText] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showRevisionForm, setShowRevisionForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
@@ -345,44 +350,108 @@ export default function ProposalReview() {
     return matchFilter && matchSearch;
   });
 
-  const approve = (id: number) => {
-    setProposals((prev) =>
-      prev.map((p) =>
-        p.proposal_id === id
-          ? { ...p, status: "approved", rejection_reason: null }
-          : p,
-      ),
-    );
-    setShowRejectForm(false);
-    setShowRevisionForm(false);
+  const approve = async (id: number) => {
+    setSubmitting(true);
+    try {
+      await reviewProposal(id, { decision: "approve" });
+
+      setProposals((prev) =>
+        prev.map((p) =>
+          p.proposal_id === id
+            ? { ...p, status: "approved", rejection_reason: null }
+            : p,
+        ),
+      );
+      setShowRejectForm(false);
+      setShowRevisionForm(false);
+    } catch (err) {
+      console.error("Phê duyệt thất bại", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const sendRevision = (id: number) => {
+  const sendRevision = async (id: number) => {
     if (!revisionText.trim()) return;
-    setProposals((prev) =>
-      prev.map((p) =>
-        p.proposal_id === id
-          ? { ...p, status: "revision", revision_feedback: revisionText.trim() }
-          : p,
-      ),
-    );
+    setSubmitting(true);
+    try {
+      await reviewProposal(id, {
+        decision: "revision",
+        feedback: revisionText.trim(),
+      });
 
-    setRevisionText("");
-    setShowRevisionForm(false);
+      setProposals((prev) =>
+        prev.map((p) =>
+          p.proposal_id === id
+            ? {
+                ...p,
+                status: "revision",
+                revision_feedback: revisionText.trim(),
+              }
+            : p,
+        ),
+      );
+
+      setRevisionText("");
+      setShowRevisionForm(false);
+    } catch (err) {
+      console.error("Yêu cầu sửa thất bại", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const sendRejection = (id: number) => {
+  const sendRejection = async (id: number) => {
     if (!rejectionText.trim()) return;
-    setProposals((prev) =>
-      prev.map((p) =>
-        p.proposal_id === id
-          ? { ...p, status: "rejected", rejection_reason: rejectionText.trim() }
-          : p,
-      ),
-    );
+    setSubmitting(true);
+    try {
+      await reviewProposal(id, {
+        decision: "reject",
+        reason: rejectionText.trim(),
+      });
 
-    setRejectionText("");
-    setShowRejectForm(false);
+      setProposals((prev) =>
+        prev.map((p) =>
+          p.proposal_id === id
+            ? {
+                ...p,
+                status: "rejected",
+                rejection_reason: rejectionText.trim(),
+              }
+            : p,
+        ),
+      );
+
+      setRejectionText("");
+      setShowRejectForm(false);
+    } catch (err) {
+      console.error("Từ chối thất bại", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReopen = async (id: number) => {
+    setSubmitting(true);
+    try {
+      await reopenProposal(id);
+      setProposals((prev) =>
+        prev.map((p) =>
+          p.proposal_id === id
+            ? {
+                ...p,
+                status: "pending",
+                rejection_reason: null,
+                revision_feedback: null,
+              }
+            : p,
+        ),
+      );
+    } catch (err) {
+      console.error("Mở lại thất bại", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openDetail = (p: SeriesProposal) => {
@@ -772,6 +841,7 @@ export default function ProposalReview() {
                     </button>
                     <button
                       className="pr-btn pr-btn--approve pr-btn--icon"
+                      disabled={submitting}
                       onClick={() => approve(selected.proposal_id)}
                     >
                       <CheckCircle2 size={16} strokeWidth={1.75} /> Phê duyệt
@@ -791,20 +861,8 @@ export default function ProposalReview() {
                   selected.status === "approved") && (
                   <button
                     className="pr-btn pr-btn--ghost"
-                    onClick={() => {
-                      setProposals((prev) =>
-                        prev.map((p) =>
-                          p.proposal_id === selected.proposal_id
-                            ? {
-                                ...p,
-                                status: "pending",
-                                rejection_reason: null,
-                                revision_feedback: null,
-                              }
-                            : p,
-                        ),
-                      );
-                    }}
+                    disabled={submitting}
+                    onClick={() => handleReopen(selected.proposal_id)}
                   >
                     Mở lại xét duyệt
                   </button>
