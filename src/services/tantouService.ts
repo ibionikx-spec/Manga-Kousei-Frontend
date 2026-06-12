@@ -95,13 +95,13 @@ export const fetchProposals = async (
             avatarUrl: item.mangaka?.avatarUrl || null,
           },
           genres: (item.genres || []).map((g: ProposalGenreDTO) => ({
-            genre_id: g.genreId,
+            genre_id: g.genre_id,
             name: g.name,
           })),
           characters: (item.characters || []).map(
             (c: ProposalCharacterDTO) => ({
-              character_id: c.characterId,
-              character_name: c.characterName,
+              character_id: c.character_id,
+              character_name: c.character_name,
               role: c.role,
               description: c.description || null,
             }),

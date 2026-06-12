@@ -5,13 +5,13 @@ export type ProposalStatusDTO =
   | "rejected";
 
 export interface ProposalGenreDTO {
-  genreId: number;
+  genre_id: number;
   name: string;
 }
 
 export interface ProposalCharacterDTO {
-  characterId: number;
-  characterName: string;
+  character_id: number;
+  character_name: string;
   role: string;
   description: string | null;
 }

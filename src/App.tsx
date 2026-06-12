@@ -53,6 +53,10 @@ function App() {
             <Route path="manage" element={<TantouManage />} />
             <Route path="approvals" element={<TantouApprovals />} />
             <Route path="proposal-review" element={<ProposalReview />} />
+            <Route
+              path="/tantou/proposal-review/:proposalId"
+              element={<ProposalReview />}
+            />
             <Route path="schedule" element={<TantouSchedule />} />
             <Route path="reports" element={<TantouReports />} />
           </Route>

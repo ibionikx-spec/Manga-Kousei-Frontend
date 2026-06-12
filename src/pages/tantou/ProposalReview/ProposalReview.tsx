@@ -25,6 +25,7 @@ import type {
   ProposalStatus,
   SeriesProposal,
 } from "../../../types/SeriesProposal";
+import { useNavigate, useParams } from "react-router-dom";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MOCK_PROPOSALS: SeriesProposal[] = [
@@ -287,8 +288,14 @@ const STATUS_META: Record<
 };
 
 export default function ProposalReview() {
+  const { proposalId } = useParams<{ proposalId?: string }>();
+  const navigate = useNavigate();
+
   const [proposals, setProposals] = useState<SeriesProposal[]>([]);
-  const [selected, setSelected] = useState<SeriesProposal | null>(null);
+  // const [selected, setSelected] = useState<SeriesProposal | null>(null);
+  const selected = proposalId
+    ? (proposals.find((p) => p.proposal_id === Number(proposalId)) ?? null)
+    : null;
   const [filter, setFilter] = useState<ProposalStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [revisionText, setRevisionText] = useState("");
@@ -300,14 +307,19 @@ export default function ProposalReview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!proposalId && proposals.length > 0 && !selected) {
+      navigate(`/tantou/proposal-review/${proposals[0].proposal_id}`, {
+        replace: true,
+      });
+    }
+  }, [proposalId, proposals, selected, navigate]);
+
+  useEffect(() => {
     const loadProposals = async () => {
       try {
         setLoading(true);
         const data = await fetchProposals();
         setProposals(data);
-        if (data.length > 0 && !selected) {
-          setSelected(data[0]);
-        }
       } catch (err) {
         console.error("unsuccessful fetch data proposals", err);
       } finally {
@@ -341,8 +353,6 @@ export default function ProposalReview() {
           : p,
       ),
     );
-    if (selected?.proposal_id === id)
-      setSelected((prev) => (prev ? { ...prev, status: "approved" } : null));
     setShowRejectForm(false);
     setShowRevisionForm(false);
   };
@@ -356,16 +366,7 @@ export default function ProposalReview() {
           : p,
       ),
     );
-    if (selected?.proposal_id === id)
-      setSelected((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "revision",
-              revision_feedback: revisionText.trim(),
-            }
-          : null,
-      );
+
     setRevisionText("");
     setShowRevisionForm(false);
   };
@@ -379,22 +380,14 @@ export default function ProposalReview() {
           : p,
       ),
     );
-    if (selected?.proposal_id === id)
-      setSelected((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "rejected",
-              rejection_reason: rejectionText.trim(),
-            }
-          : null,
-      );
+
     setRejectionText("");
     setShowRejectForm(false);
   };
 
   const openDetail = (p: SeriesProposal) => {
-    setSelected((prev) => (prev?.proposal_id === p.proposal_id ? null : p));
+    navigate(`/tantou/proposal-review/${p.proposal_id}`);
+
     setShowRejectForm(false);
     setShowRevisionForm(false);
     setRevisionText("");
@@ -549,7 +542,7 @@ export default function ProposalReview() {
                 </div>
                 <button
                   className="pr-detail__close"
-                  onClick={() => setSelected(null)}
+                  onClick={() => navigate("/tantou/proposal-review")}
                 >
                   <X size={16} />
                 </button>
@@ -810,16 +803,6 @@ export default function ProposalReview() {
                               }
                             : p,
                         ),
-                      );
-                      setSelected((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              status: "pending",
-                              rejection_reason: null,
-                              revision_feedback: null,
-                            }
-                          : null,
                       );
                     }}
                   >
