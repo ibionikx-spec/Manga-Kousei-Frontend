@@ -745,3 +745,120 @@
     grid-template-columns: 1fr;
   }
 }
+
+.cw-tantou-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cw-tantou-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fafbfc;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  font-family: inherit;
+
+  &:hover {
+    border-color: #0254b1;
+    background: #f0f6ff;
+  }
+
+  &--selected {
+    border-color: #0254b1;
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(2, 84, 177, 0.1);
+  }
+
+  &__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    span {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0254b1;
+    }
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    span {
+      font-size: 13px;
+      color: #64748b;
+    }
+  }
+
+  &__check {
+    color: #0254b1;
+    flex-shrink: 0;
+  }
+}
+
+.cw-tantou-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 20px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+
+  svg {
+    color: #94a3b8;
+  }
+
+  small {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  &--empty svg {
+    color: #cbd5e1;
+  }
+
+  &__spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

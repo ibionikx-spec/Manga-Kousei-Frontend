@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import "./CreateWork.scss";
 import { useCreateWorkForm } from "../../hooks/useCreateWorkForm";
@@ -7,7 +7,10 @@ import { NavigationButtons } from "./NavigationButtons";
 import { StepBasicInfo } from "./StepBasicInfo";
 import { StepCharacters } from "./StepCharacters";
 import { StepNameSummary } from "./StepNameSummary";
+import { StepSelectTantou } from "./StepSelectTantou";
 import { StepReview } from "./StepReview";
+
+const TOTAL_STEPS = 5;
 
 export default function CreateWork() {
   const {
@@ -25,6 +28,11 @@ export default function CreateWork() {
     canProceed,
     genresList,
   } = useCreateWorkForm();
+
+  const [selectedTantouId, setSelectedTantouId] = useState<number | null>(null);
+
+  const canProceedStep4 = step !== 4 || selectedTantouId !== null;
+  const effectiveCanProceed = canProceed && canProceedStep4;
 
   useEffect(() => {
     return () => {
@@ -46,9 +54,6 @@ export default function CreateWork() {
             việc.
           </p>
           <div className="cw-success__meta">
-            <span>
-              ID tạm thời: <strong>#DFT-{Math.floor(1 * 9000) + 1000}</strong>
-            </span>
             <span>
               Trạng thái: <strong className="pending">Chờ duyệt</strong>
             </span>
@@ -100,6 +105,12 @@ export default function CreateWork() {
           />
         )}
         {step === 4 && (
+          <StepSelectTantou
+            selectedTantouId={selectedTantouId}
+            onSelect={setSelectedTantouId}
+          />
+        )}
+        {step === 5 && (
           <StepReview
             title={form.title}
             genreIds={form.genreIds}
@@ -114,11 +125,12 @@ export default function CreateWork() {
 
         <NavigationButtons
           step={step}
-          canProceed={canProceed}
+          totalSteps={TOTAL_STEPS}
+          canProceed={effectiveCanProceed}
           isSubmitting={isSubmitting}
           onPrev={() => setStep("dec")}
           onNext={() => setStep("inc")}
-          onSubmit={submitProposal}
+          onSubmit={() => submitProposal(selectedTantouId)}
         />
       </div>
     </div>

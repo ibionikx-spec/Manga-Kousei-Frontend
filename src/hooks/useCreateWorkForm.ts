@@ -65,6 +65,8 @@ const formReducer = (
   }
 };
 
+const TOTAL_STEPS = 5;
+
 export const useCreateWorkForm = () => {
   const [form, dispatch] = useReducer(formReducer, initialState);
   const [step, setStep] = useState(1);
@@ -88,15 +90,18 @@ export const useCreateWorkForm = () => {
     () => dispatch({ type: "ADD_CHARACTER" }),
     [],
   );
+
   const removeCharacter = useCallback((id: number) => {
     dispatch({ type: "REMOVE_CHARACTER", id });
   }, []);
+
   const updateCharacter = useCallback(
     (id: number, key: keyof Character, value: string) => {
       dispatch({ type: "UPDATE_CHARACTER", id, key, value });
     },
     [],
   );
+
   const resetForm = useCallback(() => {
     if (form.sketchPreview) URL.revokeObjectURL(form.sketchPreview);
     dispatch({ type: "RESET_FORM" });
@@ -105,46 +110,54 @@ export const useCreateWorkForm = () => {
     setSubmitError(null);
   }, [form.sketchPreview]);
 
-  const submitProposal = useCallback(async () => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      let sketchImageUrl = "";
-      if (form.sketchImage) {
-        sketchImageUrl = await uploadImageToCloudinary(form.sketchImage);
+  const submitProposal = useCallback(
+    async (tantouId: number | null) => {
+      if (!tantouId) {
+        alert("Vui lòng chọn Tantou phụ trách trước khi nộp.");
+        return;
       }
 
-      const payload = {
-        workingTitle: form.title,
-        synopsis: form.synopsis,
-        targetAudience: form.targetAudience,
-        nameSummary: form.nameSummary,
-        sketchImageUrl,
-        genreIds: form.genreIds,
-        characters: form.characters.map((c) => ({
-          characterName: c.name,
-          role: c.role,
-          description: c.description,
-        })),
-      };
+      setIsSubmitting(true);
+      setSubmitError(null);
 
-      const response = await api.post("/proposals", payload);
-      if (response.status === 200 || response.status === 201) {
-        setSubmitted(true);
-      } else {
-        throw new Error("Gửi proposal thất bại, mã lỗi: " + response.status);
+      try {
+        let sketchImageUrl = "";
+        if (form.sketchImage) {
+          sketchImageUrl = await uploadImageToCloudinary(form.sketchImage);
+        }
+
+        const payload = {
+          workingTitle: form.title,
+          synopsis: form.synopsis,
+          targetAudience: form.targetAudience,
+          nameSummary: form.nameSummary,
+          sketchImageUrl,
+          genreIds: form.genreIds,
+          tantouId,
+          characters: form.characters.map((c) => ({
+            characterName: c.name,
+            role: c.role,
+            description: c.description,
+          })),
+        };
+
+        const response = await api.post("/proposals", payload);
+        if (response.status === 200 || response.status === 201) {
+          setSubmitted(true);
+        } else {
+          throw new Error("Gửi proposal thất bại, mã lỗi: " + response.status);
+        }
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Có lỗi xảy ra khi gửi proposal";
+        setSubmitError(message);
+        alert(message);
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (err: unknown) {
-      let message = "Có lỗi xảy ra khi gửi proposal";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      setSubmitError(message);
-      alert(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [form]);
+    },
+    [form],
+  );
 
   const canProceed = useMemo(() => {
     if (step === 1) {
@@ -172,7 +185,7 @@ export const useCreateWorkForm = () => {
 
   const handleSetStep = useCallback((dir: "inc" | "dec") => {
     setStep((prev) => {
-      if (dir === "inc") return Math.min(4, prev + 1);
+      if (dir === "inc") return Math.min(TOTAL_STEPS, prev + 1);
       return Math.max(1, prev - 1);
     });
   }, []);

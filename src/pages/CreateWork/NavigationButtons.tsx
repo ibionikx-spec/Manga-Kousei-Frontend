@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 
 interface NavigationButtonsProps {
   step: number;
+  totalSteps: number;
   canProceed: boolean;
   isSubmitting: boolean;
   onPrev: () => void;
@@ -11,6 +12,7 @@ interface NavigationButtonsProps {
 
 export const NavigationButtons = ({
   step,
+  totalSteps,
   canProceed,
   isSubmitting,
   onPrev,
@@ -28,8 +30,10 @@ export const NavigationButtons = ({
         <ChevronLeft size={18} /> Quay lại
       </button>
       <div className="cw-nav__right">
-        <span className="cw-nav__hint">Bước {step} / 4</span>
-        {step < 4 ? (
+        <span className="cw-nav__hint">
+          Bước {step} / {totalSteps}
+        </span>
+        {step < totalSteps ? (
           <button
             type="button"
             className="cw-btn cw-btn--primary"
