@@ -1,4 +1,10 @@
-export type ProposalStatus = "pending" | "approved" | "revision" | "rejected";
+// n#
+export type ProposalStatus =
+  | "pending"
+  | "approved"
+  | "revision"
+  | "rejected"
+  | "pending_admin";
 
 export interface ProposalCharacter {
   character_id: number;

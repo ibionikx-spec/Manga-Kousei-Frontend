@@ -289,6 +289,11 @@ const STATUS_META: Record<
     className: "pr-badge--rejected",
     icon: <XCircle size={11} />,
   },
+  pending_admin: {
+    label: "CHỜ ADMIN",
+    className: "pr-badge--pending-admin",
+    icon: <Clock size={11} />,
+  },
 };
 
 export default function ProposalReview() {
@@ -337,6 +342,7 @@ export default function ProposalReview() {
   const counts = {
     all: proposals.length,
     pending: proposals.filter((p) => p.status === "pending").length,
+    pending_admin: proposals.filter((p) => p.status === "pending_admin").length,
     approved: proposals.filter((p) => p.status === "approved").length,
     revision: proposals.filter((p) => p.status === "revision").length,
     rejected: proposals.filter((p) => p.status === "rejected").length,
@@ -354,11 +360,10 @@ export default function ProposalReview() {
     setSubmitting(true);
     try {
       await reviewProposal(id, { decision: "approve" });
-
       setProposals((prev) =>
         prev.map((p) =>
           p.proposal_id === id
-            ? { ...p, status: "approved", rejection_reason: null }
+            ? { ...p, status: "pending_admin", rejection_reason: null }
             : p,
         ),
       );
@@ -491,7 +496,14 @@ export default function ProposalReview() {
 
         <div className="pr-filter-tabs">
           {(
-            ["all", "pending", "revision", "approved", "rejected"] as const
+            [
+              "all",
+              "pending",
+              "pending_admin",
+              "revision",
+              "approved",
+              "rejected",
+            ] as const
           ).map((f) => (
             <button
               key={f}
@@ -502,11 +514,13 @@ export default function ProposalReview() {
                 ? "Tất cả"
                 : f === "pending"
                   ? "Chờ duyệt"
-                  : f === "revision"
-                    ? "Cần sửa"
-                    : f === "approved"
-                      ? "Đã duyệt"
-                      : "Từ chối"}
+                  : f === "pending_admin"
+                    ? "Chờ Admin"
+                    : f === "revision"
+                      ? "Cần sửa"
+                      : f === "approved"
+                        ? "Đã duyệt"
+                        : "Từ chối"}
               <span className="pr-filter-tab__count">{counts[f]}</span>
             </button>
           ))}
@@ -825,17 +839,13 @@ export default function ProposalReview() {
                   <div className="pr-detail__actions">
                     <button
                       className="pr-btn pr-btn--ghost pr-btn--icon"
-                      onClick={() => {
-                        setShowRejectForm(true);
-                      }}
+                      onClick={() => setShowRejectForm(true)}
                     >
                       <XCircle size={16} strokeWidth={1.75} /> Từ chối
                     </button>
                     <button
                       className="pr-btn pr-btn--revision pr-btn--icon"
-                      onClick={() => {
-                        setShowRevisionForm(true);
-                      }}
+                      onClick={() => setShowRevisionForm(true)}
                     >
                       <RotateCcw size={15} strokeWidth={1.75} /> Yêu cầu sửa
                     </button>
@@ -848,6 +858,23 @@ export default function ProposalReview() {
                     </button>
                   </div>
                 )}
+              </div>
+            ) : selected.status === "pending_admin" ? (
+              <div className="pr-detail__footer pr-detail__footer--decided">
+                <span className="pr-badge pr-badge--lg pr-badge--pending-admin">
+                  <Clock size={11} /> CHỜ ADMIN DUYỆT
+                </span>
+                <p className="pr-detail__footer-note">
+                  Đề xuất đã được bạn phê duyệt và đang chờ Admin xét duyệt lần
+                  cuối.
+                </p>
+                <button
+                  className="pr-btn pr-btn--ghost"
+                  disabled={submitting}
+                  onClick={() => handleReopen(selected.proposal_id)}
+                >
+                  Mở lại xét duyệt
+                </button>
               </div>
             ) : (
               <div className="pr-detail__footer pr-detail__footer--decided">

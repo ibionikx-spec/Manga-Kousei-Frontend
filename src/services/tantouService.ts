@@ -117,6 +117,7 @@ function validateStatus(s: string): ProposalStatus {
     "approved",
     "revision",
     "rejected",
+    "pending_admin",
   ];
   return valid.includes(s as ProposalStatus)
     ? (s as ProposalStatus)
