@@ -1,0 +1,554 @@
+// src/pages/mangaka/MangakaChapters/MangakaChapters.scss
+
+$bg: #f4f7fb;
+$ink: #111827;
+$navy: #0d2544;
+$navy-deep: #102447;
+$blue: #0b66c6;
+$blue-soft: #edf4ff;
+$border: #c5cedd;
+$border-soft: #e2e8f0;
+$text-muted: #5d6473;
+$text-faint: #7a808d;
+$text-sub: #4b5563;
+$green: #16a34a;
+$green-bg: #f0fdf4;
+$red: #dc2626;
+$red-bg: #fff1f1;
+$orange: #c2410c;
+$orange-bg: #fff7ed;
+$shadow-card:
+  0 1px 2px rgba(15, 23, 42, 0.04),
+  0 4px 12px rgba(15, 23, 42, 0.05);
+$shadow-block: 3px 3px 0 $navy-deep;
+
+.mc-page {
+  min-height: calc(100vh - 70px);
+  background: $bg;
+  padding: 32px 32px 48px;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: $ink;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  button {
+    cursor: pointer;
+    font: inherit;
+  }
+  p,
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+  }
+  a {
+    text-decoration: none;
+    color: $blue;
+    font-weight: 700;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+.mc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: $text-faint;
+  margin-bottom: 12px;
+
+  svg {
+    color: $border;
+  }
+  span {
+    color: $text-muted;
+  }
+}
+
+.mc-header {
+  margin-bottom: 24px;
+
+  &__row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    font-size: 24px;
+    font-weight: 950;
+    color: $navy;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  &__sub {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $text-muted;
+  }
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.mc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 6px;
+  background: $blue;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: $shadow-block;
+  transition:
+    background 160ms,
+    transform 160ms;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: #0758ad;
+    transform: translateY(-1px);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.mc-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border: 1px solid $border-soft;
+  border-radius: 6px;
+  background: #fff;
+  color: $text-sub;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 160ms;
+
+  &:hover {
+    border-color: $border;
+    color: $ink;
+  }
+}
+
+// ── Create form card ──────────────────────────────────────────────────────────
+.mc-form-card {
+  background: #fff;
+  border: 1px solid $blue;
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px rgba(11, 102, 198, 0.08);
+  margin-bottom: 20px;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid $border-soft;
+    font-size: 14px;
+    font-weight: 900;
+    color: $navy;
+
+    button {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 6px;
+      background: $bg;
+      color: $text-faint;
+      &:hover {
+        background: $border-soft;
+        color: $ink;
+      }
+    }
+  }
+
+  &__body {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    padding: 16px 18px;
+  }
+
+  &__error {
+    margin: 0 18px;
+    padding: 8px 12px;
+    background: $red-bg;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $red;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px;
+    border-top: 1px solid $border-soft;
+  }
+}
+
+.mc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: $text-faint;
+
+    span {
+      color: $red;
+      margin-left: 2px;
+    }
+  }
+
+  input {
+    border: 1px solid $border-soft;
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $ink;
+    outline: none;
+    transition:
+      border-color 160ms,
+      box-shadow 160ms;
+
+    &::placeholder {
+      color: $text-faint;
+      font-weight: 500;
+    }
+    &:focus {
+      border-color: $blue;
+      box-shadow: 0 0 0 3px rgba(11, 102, 198, 0.1);
+    }
+  }
+}
+
+.mc-optional {
+  font-weight: 500;
+  font-size: 10px;
+  color: $text-faint !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+// ── Chapter list ──────────────────────────────────────────────────────────────
+.mc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mc-chapter {
+  background: #fff;
+  border: 1px solid $border-soft;
+  border-radius: 12px;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+  transition: border-color 160ms;
+
+  &--open {
+    border-color: $blue;
+  }
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    transition: background 120ms;
+
+    &:hover {
+      background: $bg;
+    }
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: $blue-soft;
+    color: $blue;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__top {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+
+  &__number {
+    font-size: 15px;
+    font-weight: 950;
+    color: $navy;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: $text-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__deadline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: $text-faint;
+  }
+
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  &__chevron {
+    color: $text-faint;
+    flex-shrink: 0;
+    transition: transform 200ms;
+  }
+}
+
+// Chapter status badges
+.mc-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 2px 9px;
+  border-radius: 999px;
+
+  &.cs-draft {
+    background: #f1f5f9;
+    color: $text-sub;
+  }
+  &.cs-progress {
+    background: #eff6ff;
+    color: $blue;
+  }
+  &.cs-submitted {
+    background: $green-bg;
+    color: $green;
+  }
+  &.cs-pending {
+    background: $orange-bg;
+    color: $orange;
+  }
+  &.cs-published {
+    background: #f0fdf4;
+    color: #15803d;
+  }
+}
+
+// Progress bar
+.mc-progress-bar {
+  width: 80px;
+  height: 5px;
+  border-radius: 999px;
+  background: $border-soft;
+  overflow: hidden;
+
+  &__fill {
+    height: 100%;
+    border-radius: 999px;
+    background: $blue;
+    transition: width 400ms ease;
+  }
+}
+
+.mc-progress-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: $text-faint;
+  white-space: nowrap;
+}
+
+// ── Page deadlines ────────────────────────────────────────────────────────────
+.mc-deadlines {
+  border-top: 1px solid $border-soft;
+  background: #fafbff;
+  padding: 14px 18px 16px;
+
+  &__empty {
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-faint;
+    text-align: center;
+    padding: 12px 0;
+  }
+
+  &__head {
+    display: grid;
+    grid-template-columns: 1fr 1fr 120px 1fr;
+    gap: 8px;
+    padding: 0 12px 8px;
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: $text-faint;
+    border-bottom: 1px solid $border-soft;
+    margin-bottom: 8px;
+  }
+}
+
+.mc-deadline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 120px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 120ms;
+
+  &:hover {
+    background: #fff;
+  }
+
+  &__pages {
+    font-size: 13px;
+    font-weight: 800;
+    color: $ink;
+  }
+
+  &__date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $text-sub;
+
+    svg {
+      color: $text-faint;
+    }
+  }
+}
+
+// Deadline status badges
+.mc-deadline-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 2px 9px;
+  border-radius: 999px;
+
+  &.ds-pending {
+    background: $orange-bg;
+    color: $orange;
+  }
+  &.ds-submitted {
+    background: $green-bg;
+    color: $green;
+  }
+  &.ds-late {
+    background: $red-bg;
+    color: $red;
+  }
+}
+
+.mc-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid $blue;
+  border-radius: 6px;
+  background: $blue-soft;
+  color: $blue;
+  font-size: 12px;
+  font-weight: 800;
+  transition: all 160ms;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: $blue;
+    color: #fff;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.mc-submitted-at {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: $green;
+}
+
+.mc-late-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: $red;
+}
+
+// ── Empty ─────────────────────────────────────────────────────────────────────
+.mc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 200px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-faint;
+
+  svg {
+    color: $border-soft;
+  }
+}

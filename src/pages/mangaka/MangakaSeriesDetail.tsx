@@ -14,7 +14,9 @@ import {
   UploadCloud,
   Archive,
   ArrowRight,
+  BookOpen,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import "./MangakaSeriesDetail.scss";
 
 const seriesData: Record<
@@ -156,6 +158,8 @@ export default function MangakaSeriesDetail() {
   const { id } = useParams();
   const series = seriesData[id ?? "1"] ?? seriesData["1"];
 
+  const navigate = useNavigate();
+
   return (
     <div className="series-detail-page">
       <div className="detail-series-header">
@@ -168,6 +172,14 @@ export default function MangakaSeriesDetail() {
         <div className="header-row">
           <h1>{series.title}</h1>
           <div className="header-actions">
+            <button
+              className="btn-outline"
+              onClick={() => navigate(`/mangaka/series/${id}/chapters`)}
+            >
+              <BookOpen size={16} />
+              Quản lý Chapters
+            </button>
+
             <button className="btn-outline">
               <Pencil size={16} />
               Chỉnh sửa Series

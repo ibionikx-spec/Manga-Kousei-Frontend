@@ -1,0 +1,512 @@
+// src/pages/tantou/TantouSeriesChapters/TantouSeriesChapters.scss
+
+$bg: #f8fafc;
+$ink: #111827;
+$navy: #0d2544;
+$blue: #0b66c6;
+$blue-soft: #edf4ff;
+$border: #c5cedd;
+$border-soft: #e2e8f0;
+$text-muted: #5d6473;
+$text-faint: #7a808d;
+$text-sub: #4b5563;
+$green: #16a34a;
+$green-bg: #f0fdf4;
+$red: #dc2626;
+$red-bg: #fff1f1;
+$orange: #c2410c;
+$orange-bg: #fff7ed;
+$shadow-card:
+  0 1px 2px rgba(15, 23, 42, 0.04),
+  0 4px 12px rgba(15, 23, 42, 0.05);
+
+.tsc-page {
+  min-height: calc(100vh - 70px);
+  background: $bg;
+  padding: 32px 32px 48px;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: $ink;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  button {
+    cursor: pointer;
+    font: inherit;
+  }
+  p,
+  h1 {
+    margin: 0;
+  }
+  a {
+    color: $blue;
+    font-weight: 700;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+.tsc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: $text-faint;
+  margin-bottom: 10px;
+  svg {
+    color: $border;
+  }
+  span {
+    color: $text-muted;
+  }
+}
+
+.tsc-header {
+  margin-bottom: 24px;
+  &__title {
+    font-size: 24px;
+    font-weight: 950;
+    color: $navy;
+    margin-bottom: 4px;
+  }
+  &__sub {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $text-muted;
+  }
+}
+
+// ── List ──────────────────────────────────────────────────────────────────────
+.tsc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tsc-chapter {
+  background: #fff;
+  border: 1px solid $border-soft;
+  border-radius: 12px;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+  transition: border-color 160ms;
+
+  &--open {
+    border-color: $blue;
+  }
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    transition: background 120ms;
+    &:hover {
+      background: #fafbff;
+    }
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: $blue-soft;
+    color: $blue;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__top {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+
+  &__number {
+    font-size: 15px;
+    font-weight: 950;
+    color: $navy;
+  }
+  &__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: $text-muted;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__deadline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: $text-faint;
+  }
+
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  &__chevron {
+    color: $text-faint;
+    flex-shrink: 0;
+    transition: transform 200ms;
+  }
+}
+
+.tsc-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 2px 9px;
+  border-radius: 999px;
+
+  &.tcs-draft {
+    background: #f1f5f9;
+    color: $text-sub;
+  }
+  &.tcs-progress {
+    background: $blue-soft;
+    color: $blue;
+  }
+  &.tcs-submitted {
+    background: $green-bg;
+    color: $green;
+  }
+  &.tcs-pending {
+    background: $orange-bg;
+    color: $orange;
+  }
+  &.tcs-published {
+    background: #f0fdf4;
+    color: #15803d;
+  }
+}
+
+.tsc-progress-bar {
+  width: 90px;
+  height: 5px;
+  border-radius: 999px;
+  background: $border-soft;
+  overflow: hidden;
+
+  &__fill {
+    height: 100%;
+    border-radius: 999px;
+    background: $blue;
+    transition: width 400ms ease;
+  }
+}
+
+.tsc-progress-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: $text-faint;
+  white-space: nowrap;
+}
+
+.tsc-no-deadline {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: $border;
+}
+
+// ── Deadlines panel ───────────────────────────────────────────────────────────
+.tsc-deadlines {
+  border-top: 1px solid $border-soft;
+  background: #fafbff;
+  padding: 14px 18px 16px;
+
+  &__empty {
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-faint;
+    text-align: center;
+    padding: 10px 0 6px;
+  }
+
+  &__head {
+    display: grid;
+    grid-template-columns: 1fr 1fr 110px 1fr 80px;
+    gap: 8px;
+    padding: 0 12px 8px;
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: $text-faint;
+    border-bottom: 1px solid $border-soft;
+    margin-bottom: 6px;
+  }
+}
+
+.tsc-deadline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 110px 1fr 80px;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 8px;
+  transition: background 120ms;
+  &:hover {
+    background: #fff;
+  }
+}
+
+.tsc-dr {
+  &__pages {
+    font-size: 13px;
+    font-weight: 800;
+    color: $ink;
+  }
+  &__date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $text-sub;
+    svg {
+      color: $text-faint;
+    }
+  }
+  &__submitted {
+    font-size: 12px;
+    font-weight: 700;
+    color: $text-faint;
+  }
+  &__actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+}
+
+.tsc-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 2px 9px;
+  border-radius: 999px;
+
+  &.tds-pending {
+    background: $orange-bg;
+    color: $orange;
+  }
+  &.tds-submitted {
+    background: $green-bg;
+    color: $green;
+  }
+  &.tds-late {
+    background: $red-bg;
+    color: $red;
+  }
+}
+
+.tsc-action-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid $border-soft;
+  background: #fff;
+  transition: all 160ms;
+
+  &--edit {
+    color: $blue;
+    &:hover {
+      background: $blue-soft;
+      border-color: $blue;
+    }
+  }
+  &--delete {
+    color: $red;
+    &:hover {
+      background: $red-bg;
+      border-color: $red;
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// ── Inline form ───────────────────────────────────────────────────────────────
+.tsc-form {
+  background: #fff;
+  border: 1px solid $blue;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 0 3px rgba(11, 102, 198, 0.07);
+
+  &__title {
+    font-size: 13px;
+    font-weight: 900;
+    color: $navy;
+    margin-bottom: 12px;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.4fr auto;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__error {
+    margin-top: 10px;
+    padding: 7px 12px;
+    background: $red-bg;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $red;
+  }
+}
+
+.tsc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  label {
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: $text-faint;
+  }
+
+  input {
+    border: 1px solid $border-soft;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: $ink;
+    outline: none;
+    transition:
+      border-color 160ms,
+      box-shadow 160ms;
+
+    &::placeholder {
+      color: $text-faint;
+      font-weight: 500;
+    }
+    &:focus {
+      border-color: $blue;
+      box-shadow: 0 0 0 3px rgba(11, 102, 198, 0.1);
+    }
+  }
+}
+
+.tsc-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: $blue;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background 160ms;
+  &:hover:not(:disabled) {
+    background: #0758ad;
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.tsc-btn-cancel {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid $border-soft;
+  border-radius: 6px;
+  background: #fff;
+  color: $text-faint;
+  &:hover {
+    background: $bg;
+    color: $red;
+    border-color: $red;
+  }
+}
+
+.tsc-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border: 1px dashed $border;
+  border-radius: 6px;
+  background: transparent;
+  color: $text-sub;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: all 160ms;
+  &:hover {
+    border-color: $blue;
+    color: $blue;
+    background: $blue-soft;
+  }
+}
+
+// ── Empty ─────────────────────────────────────────────────────────────────────
+.tsc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 200px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-faint;
+  svg {
+    color: $border-soft;
+  }
+}

@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  AlertTriangle,
   Bell,
   BookOpen,
-  CalendarClock,
+  Calendar,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Eye,
   Grid3X3,
   Layers3,
@@ -17,348 +17,278 @@ import {
   Search,
   ShieldAlert,
   Sparkles,
+  Tag,
 } from "lucide-react";
+import {
+  fetchTantouSeries,
+  type TantouSeries,
+} from "../../services/tantouSeriesService";
+import { getAvatarColor, getInitials } from "../../utils";
 import "./TantouManage.scss";
 
-type WorkStatus = "on-track" | "overdue" | "pre-production";
-type Priority = "critical" | "high" | "medium" | "low";
 type ViewMode = "grid" | "list";
-type SortMode = "deadline" | "newest" | "name" | "progress";
-type StatusFilter = "all" | WorkStatus;
+type SortMode = "newest" | "name" | "progress" | "chapters";
+type StatusFilter = "all" | string;
 
-interface MangaWork {
-  id: number;
-  title: string;
-  mangaka: string;
-  role: string;
-  status: WorkStatus;
-  currentChapter: number;
-  deadline: string;
-  progress: number;
-  createdAt: string;
-  genre: string;
-  phase: string;
-  coverTone: "indigo" | "rose" | "amber" | "emerald" | "cyan" | "slate";
-}
-
-const TODAY = new Date("2026-06-17T00:00:00");
-
-const WORKS: MangaWork[] = [
-  {
-    id: 1,
-    title: "Thành Phố Sau Cơn Mưa",
-    mangaka: "Shinji Ikari",
-    role: "Mangaka",
-    status: "on-track",
-    currentChapter: 45,
-    deadline: "2026-06-19",
-    progress: 91,
-    createdAt: "2026-06-08",
-    genre: "Drama",
-    phase: "Genga review",
-    coverTone: "indigo",
-  },
-  {
-    id: 2,
-    title: "Bản Giao Hưởng Số 7 Của Những Vì Sao",
-    mangaka: "Aki Tanaka",
-    role: "Lead Mangaka",
-    status: "overdue",
-    currentChapter: 18,
-    deadline: "2026-06-14",
-    progress: 58,
-    createdAt: "2026-05-28",
-    genre: "Sci-fi",
-    phase: "Name correction",
-    coverTone: "rose",
-  },
-  {
-    id: 3,
-    title: "Học Viện Bóng Đêm",
-    mangaka: "Mai Kisaragi",
-    role: "Mangaka",
-    status: "pre-production",
-    currentChapter: 1,
-    deadline: "2026-06-28",
-    progress: 35,
-    createdAt: "2026-06-16",
-    genre: "Fantasy",
-    phase: "Concept",
-    coverTone: "cyan",
-  },
-  {
-    id: 4,
-    title: "Người Gác Đền Mùa Hạ",
-    mangaka: "Kenji Mori",
-    role: "Mangaka",
-    status: "on-track",
-    currentChapter: 32,
-    deadline: "2026-06-25",
-    progress: 86,
-    createdAt: "2026-06-01",
-    genre: "Slice of life",
-    phase: "Typeset",
-    coverTone: "emerald",
-  },
-  {
-    id: 5,
-    title: "Đoàn Tàu Cuối Cùng",
-    mangaka: "Sora Minami",
-    role: "Storyboard Artist",
-    status: "overdue",
-    currentChapter: 9,
-    deadline: "2026-06-16",
-    progress: 48,
-    createdAt: "2026-06-04",
-    genre: "Mystery",
-    phase: "Draft pending",
-    coverTone: "amber",
-  },
-  {
-    id: 6,
-    title: "Ký Ức Của Biển Xanh",
-    mangaka: "Haru Sato",
-    role: "Mangaka",
-    status: "pre-production",
-    currentChapter: 3,
-    deadline: "2026-07-02",
-    progress: 64,
-    createdAt: "2026-06-12",
-    genre: "Adventure",
-    phase: "Worldbuilding",
-    coverTone: "slate",
-  },
-];
-
-const STATUS_LABEL: Record<WorkStatus, string> = {
-  "on-track": "Đúng tiến độ",
-  overdue: "Trễ hạn",
-  "pre-production": "Tiền sản xuất",
+const WEEKDAY_LABELS: Record<number, string> = {
+  1: "Thứ 2",
+  2: "Thứ 3",
+  3: "Thứ 4",
+  4: "Thứ 5",
+  5: "Thứ 6",
+  6: "Thứ 7",
+  7: "CN",
 };
 
-const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "Tất cả trạng thái" },
-  { value: "on-track", label: "Đúng tiến độ" },
-  { value: "overdue", label: "Trễ hạn" },
-  { value: "pre-production", label: "Tiền sản xuất" },
-];
-
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-  { value: "deadline", label: "Deadline gần nhất" },
-  { value: "newest", label: "Mới nhất" },
-  { value: "name", label: "Tên A-Z" },
-  { value: "progress", label: "Tiến độ cao nhất" },
-];
-
-const PAGE_SIZE = 4;
-
-function getDaysUntil(deadline: string) {
-  const due = new Date(`${deadline}T00:00:00`);
-  return Math.ceil((due.getTime() - TODAY.getTime()) / 86_400_000);
+function scheduleLabel(type: string | null, day: number | null): string {
+  if (!type || day === null) return "Chưa có lịch";
+  if (type === "weekly")
+    return `${WEEKDAY_LABELS[day] ?? `Thứ ${day}`} hàng tuần`;
+  return `Ngày ${day} hàng tháng`;
 }
 
-function getPriority(daysUntil: number): Priority {
-  if (daysUntil < 0 || daysUntil <= 2) return "critical";
-  if (daysUntil <= 5) return "high";
-  if (daysUntil <= 10) return "medium";
-  return "low";
+function statusMeta(status: string | null) {
+  switch (status) {
+    case "approved":
+      return { label: "Đang hoạt động", cls: "tm-status--active" };
+    case "hiatus":
+      return { label: "Tạm dừng", cls: "tm-status--hiatus" };
+    case "completed":
+      return { label: "Hoàn thành", cls: "tm-status--done" };
+    case "cancelled":
+      return { label: "Đã huỷ", cls: "tm-status--cancelled" };
+    default:
+      return { label: status ?? "—", cls: "tm-status--default" };
+  }
 }
 
-function getDeadlineText(daysUntil: number) {
-  if (daysUntil < 0) return `Trễ ${Math.abs(daysUntil)} ngày`;
-  if (daysUntil === 0) return "Đến hạn hôm nay";
-  return `Còn ${daysUntil} ngày`;
+function progressPct(total: number, submitted: number): number {
+  if (total === 0) return 0;
+  return Math.round((submitted / total) * 100);
 }
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+const COVER_PLACEHOLDER =
+  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop";
 
-function getProgressStyle(progress: number): CSSProperties {
-  const clampedProgress = Math.min(100, Math.max(0, progress));
+const PAGE_SIZE = 6;
 
-  return {
-    "--progress": `${clampedProgress}%`,
-  } as CSSProperties;
-}
-
-function WorkCard({ work, viewMode }: { work: MangaWork; viewMode: ViewMode }) {
-  const daysUntil = getDaysUntil(work.deadline);
-  const priority = getPriority(daysUntil);
-  const deadlineTone = daysUntil < 0 ? "late" : daysUntil <= 2 ? "urgent" : "safe";
+function WorkCard({
+  series,
+  viewMode,
+}: {
+  series: TantouSeries;
+  viewMode: ViewMode;
+}) {
+  const navigate = useNavigate();
+  const st = statusMeta(series.seriesStatus);
+  const pct = progressPct(
+    series.totalPageDeadlines,
+    series.submittedPageDeadlines,
+  );
 
   return (
     <article className={`tm-work-card tm-work-card--${viewMode}`}>
-      <div className="tm-work-card__main">
-        <div className="tm-work-card__meta-row">
-          <span className={`tm-status tm-status--${work.status}`}>
-            {STATUS_LABEL[work.status]}
-          </span>
-          <span className={`tm-priority tm-priority--${priority}`}>
-            {priority === "critical" && "🔴 Critical"}
-            {priority === "high" && "🟠 High"}
-            {priority === "medium" && "🟡 Medium"}
-            {priority === "low" && "🟢 Low"}
-          </span>
-        </div>
-
-        <div>
-          <p className="tm-work-card__eyebrow">{work.genre} / {work.phase}</p>
-          <h2 className="tm-work-card__title">{work.title}</h2>
-        </div>
-
-        <div className="tm-work-card__chapter">
-          <BookOpen size={18} strokeWidth={2.2} />
-          <span>Chương {work.currentChapter} đang thực hiện</span>
-        </div>
-
-        <div className={`tm-deadline tm-deadline--${deadlineTone}`}>
-          {daysUntil < 0 ? (
-            <AlertTriangle size={16} strokeWidth={2.4} />
-          ) : (
-            <CalendarClock size={16} strokeWidth={2.4} />
-          )}
-          <span>{getDeadlineText(daysUntil)}</span>
-        </div>
-
-        <div className="tm-progress">
-          <div className="tm-progress__top">
-            <span>Tiến độ chương</span>
-            <strong>{work.progress}%</strong>
-          </div>
-          <div className="tm-progress__track">
-            <span
-              className="tm-progress__fill"
-              style={getProgressStyle(work.progress)}
-            />
-          </div>
-        </div>
-
-        <div className="tm-work-card__footer">
-          <div className="tm-owner">
-            <div className="tm-owner__avatar">{getInitials(work.mangaka)}</div>
-            <div>
-              <span>Người phụ trách</span>
-              <strong>{work.mangaka}</strong>
-              <small>{work.role}</small>
-            </div>
-          </div>
-
-          <div className="tm-actions" aria-label={`Thao tác cho ${work.title}`}>
-            <button type="button" className="tm-action" aria-label="Chi tiết">
-              <Eye size={17} strokeWidth={2.2} />
-            </button>
-            <button type="button" className="tm-action" aria-label="Tin nhắn">
-              <MessageSquare size={17} strokeWidth={2.2} />
-            </button>
-            <button type="button" className="tm-action" aria-label="Annotation">
-              <PenLine size={17} strokeWidth={2.2} />
-            </button>
-            <button type="button" className="tm-action" aria-label="Cảnh báo">
-              <Bell size={17} strokeWidth={2.2} />
-            </button>
-          </div>
-        </div>
+      <div className="tm-cover">
+        <img
+          src={series.coverImageUrl ?? COVER_PLACEHOLDER}
+          alt={series.title}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = COVER_PLACEHOLDER;
+          }}
+        />
+        <div className="tm-cover__scrim" />
+        <span className={`tm-cover__status ${st.cls}`}>{st.label}</span>
       </div>
 
-      <div className={`tm-cover tm-cover--${work.coverTone}`} aria-label={`Bìa ${work.title}`}>
-        <span>{work.title.charAt(0)}</span>
+      <div className="tm-work-card__body">
+        <div className="tm-work-card__meta-row">
+          {series.genres.slice(0, 2).map((g) => (
+            <span key={g} className="tm-genre-chip">
+              <Tag size={10} />
+              {g}
+            </span>
+          ))}
+        </div>
+
+        <h2 className="tm-work-card__title">{series.title}</h2>
+
+        <div className="tm-mangaka">
+          {series.mangakaAvatarUrl ? (
+            <img
+              className="tm-mangaka__avatar"
+              src={series.mangakaAvatarUrl}
+              alt={series.mangakaName ?? ""}
+            />
+          ) : series.mangakaName ? (
+            <div
+              className="tm-mangaka__avatar tm-mangaka__avatar--initials"
+              style={{ background: getAvatarColor(series.mangakaName) }}
+            >
+              {getInitials(series.mangakaName)}
+            </div>
+          ) : null}
+          <div>
+            <div className="tm-mangaka__role">Mangaka</div>
+            <div className="tm-mangaka__name">{series.mangakaName ?? "—"}</div>
+          </div>
+        </div>
+
+        <div className="tm-stats-row">
+          <span className="tm-stat-item">
+            <BookOpen size={13} /> {series.chapterCount} chương
+          </span>
+          <span className="tm-stat-item">
+            <Calendar size={13} />{" "}
+            {scheduleLabel(series.scheduleType, series.dayValue)}
+          </span>
+        </div>
+
+        {series.totalPageDeadlines > 0 && (
+          <div className="tm-progress">
+            <div className="tm-progress__top">
+              <span>Tiến độ trang</span>
+              <strong>
+                {series.submittedPageDeadlines}/{series.totalPageDeadlines}
+              </strong>
+            </div>
+            <div className="tm-progress__track">
+              <div className="tm-progress__fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        )}
+
+        <div className="tm-work-card__footer">
+          {series.approvedAt && (
+            <span className="tm-approved-at">
+              <Clock size={11} /> {series.approvedAt}
+            </span>
+          )}
+          <div className="tm-actions">
+            <button
+              className="tm-action tm-action--chapters"
+              onClick={() =>
+                navigate(`/tantou/series/${series.seriesId}/chapters`)
+              }
+              title="Xem & set deadline chapters"
+            >
+              <BookOpen size={16} strokeWidth={2.2} />
+            </button>
+            <button className="tm-action" title="Chi tiết">
+              <Eye size={16} strokeWidth={2.2} />
+            </button>
+            <button className="tm-action" title="Tin nhắn">
+              <MessageSquare size={16} strokeWidth={2.2} />
+            </button>
+            <button className="tm-action" title="Ghi chú">
+              <PenLine size={16} strokeWidth={2.2} />
+            </button>
+            <button className="tm-action" title="Cảnh báo">
+              <Bell size={16} strokeWidth={2.2} />
+            </button>
+          </div>
+        </div>
       </div>
     </article>
   );
 }
 
 export default function TantouManage() {
+  const [seriesList, setSeriesList] = useState<TantouSeries[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortMode, setSortMode] = useState<SortMode>("deadline");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    console.log("hello?");
+
+    fetchTantouSeries()
+      .then(setSeriesList)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const stats = useMemo(
     () => [
       {
         label: "Tổng tác phẩm",
-        value: WORKS.length,
+        value: seriesList.length,
         icon: Layers3,
         tone: "primary",
       },
       {
-        label: "Đúng tiến độ",
-        value: WORKS.filter((work) => work.status === "on-track").length,
+        label: "Đang hoạt động",
+        value: seriesList.filter((s) => s.seriesStatus === "approved").length,
         icon: CheckCircle2,
         tone: "success",
       },
       {
-        label: "Trễ hạn",
-        value: WORKS.filter((work) => work.status === "overdue").length,
+        label: "Tạm dừng",
+        value: seriesList.filter((s) => s.seriesStatus === "hiatus").length,
         icon: ShieldAlert,
         tone: "danger",
       },
       {
         label: "Tiền sản xuất",
-        value: WORKS.filter((work) => work.status === "pre-production").length,
+        value: seriesList.filter((s) => s.seriesStatus === "pre-production")
+          .length,
         icon: Sparkles,
         tone: "info",
       },
     ],
-    [],
+    [seriesList],
   );
 
-  const filteredWorks = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return seriesList
+      .filter((s) => {
+        const matchStatus =
+          statusFilter === "all" || s.seriesStatus === statusFilter;
+        const matchSearch =
+          !q ||
+          s.title.toLowerCase().includes(q) ||
+          (s.mangakaName ?? "").toLowerCase().includes(q);
+        return matchStatus && matchSearch;
+      })
+      .sort((a, b) => {
+        if (sortMode === "name") return a.title.localeCompare(b.title, "vi");
+        if (sortMode === "chapters") return b.chapterCount - a.chapterCount;
+        if (sortMode === "progress") {
+          return (
+            progressPct(b.totalPageDeadlines, b.submittedPageDeadlines) -
+            progressPct(a.totalPageDeadlines, a.submittedPageDeadlines)
+          );
+        }
+        return (
+          new Date(b.approvedAt ?? 0).getTime() -
+          new Date(a.approvedAt ?? 0).getTime()
+        );
+      });
+  }, [seriesList, searchTerm, statusFilter, sortMode]);
 
-    return WORKS.filter((work) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        work.title.toLowerCase().includes(normalizedSearch) ||
-        work.mangaka.toLowerCase().includes(normalizedSearch);
-      const matchesStatus = statusFilter === "all" || work.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    }).sort((a, b) => {
-      if (sortMode === "newest") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-
-      if (sortMode === "name") {
-        return a.title.localeCompare(b.title, "vi");
-      }
-
-      if (sortMode === "progress") {
-        return b.progress - a.progress;
-      }
-
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-    });
-  }, [searchTerm, sortMode, statusFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredWorks.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const visibleWorks = filteredWorks.slice(
+  const visible = filtered.slice(
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE,
   );
 
-  const updateSearch = (value: string) => {
-    setSearchTerm(value);
-    setPage(1);
-  };
+  const STATUS_OPTIONS = [
+    { value: "all", label: "Tất cả trạng thái" },
+    { value: "approved", label: "Đang hoạt động" },
+    { value: "hiatus", label: "Tạm dừng" },
+    { value: "completed", label: "Hoàn thành" },
+  ];
 
-  const updateStatus = (value: StatusFilter) => {
-    setStatusFilter(value);
-    setPage(1);
-  };
-
-  const updateSort = (value: SortMode) => {
-    setSortMode(value);
-    setPage(1);
-  };
+  const SORT_OPTIONS = [
+    { value: "newest", label: "Mới nhất" },
+    { value: "name", label: "Tên A-Z" },
+    { value: "chapters", label: "Nhiều chương nhất" },
+    { value: "progress", label: "Tiến độ cao nhất" },
+  ];
 
   return (
     <main className="tm-page">
@@ -372,132 +302,125 @@ export default function TantouManage() {
         </p>
       </header>
 
-      <section className="tm-stats" aria-label="Thống kê tác phẩm">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-
-          return (
-            <div className={`tm-stat tm-stat--${stat.tone}`} key={stat.label}>
-              <div className="tm-stat__icon">
-                <Icon size={20} strokeWidth={2.3} />
-              </div>
-              <div>
-                <strong>{stat.value}</strong>
-                <span>{stat.label}</span>
-              </div>
+      <div className="tm-stats">
+        {stats.map((s) => (
+          <div key={s.label} className={`tm-stat tm-stat--${s.tone}`}>
+            <div className="tm-stat__icon">
+              <s.icon size={20} strokeWidth={2} />
             </div>
-          );
-        })}
-      </section>
-
-      <section className="tm-toolbar" aria-label="Bộ lọc tác phẩm">
-        <label className="tm-search">
-          <Search size={18} strokeWidth={2.2} />
-          <input
-            type="search"
-            placeholder="Tìm tác phẩm, mangaka..."
-            value={searchTerm}
-            onChange={(event) => updateSearch(event.target.value)}
-          />
-        </label>
-
-        <div className="tm-toolbar__controls">
-          <label className="tm-select">
-            <span>Filter</span>
-            <select
-              value={statusFilter}
-              onChange={(event) => updateStatus(event.target.value as StatusFilter)}
-            >
-              {FILTER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="tm-select">
-            <span>Sort</span>
-            <select
-              value={sortMode}
-              onChange={(event) => updateSort(event.target.value as SortMode)}
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="tm-view-switcher" aria-label="Đổi kiểu hiển thị">
-            <button
-              type="button"
-              className={viewMode === "grid" ? "tm-view-switcher__btn tm-view-switcher__btn--active" : "tm-view-switcher__btn"}
-              onClick={() => setViewMode("grid")}
-            >
-              <Grid3X3 size={16} strokeWidth={2.2} />
-              Grid View
-            </button>
-            <button
-              type="button"
-              className={viewMode === "list" ? "tm-view-switcher__btn tm-view-switcher__btn--active" : "tm-view-switcher__btn"}
-              onClick={() => setViewMode("list")}
-            >
-              <List size={16} strokeWidth={2.2} />
-              List View
-            </button>
+            <div>
+              <div className="tm-stat__value">{s.value}</div>
+              <div className="tm-stat__label">{s.label}</div>
+            </div>
           </div>
+        ))}
+      </div>
+
+      <div className="tm-toolbar">
+        <div className="tm-search">
+          <Search size={16} />
+          <input
+            placeholder="Tìm tên truyện hoặc mangaka..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
+          />
         </div>
-      </section>
 
-      {visibleWorks.length > 0 ? (
-        <>
-          <section className={`tm-work-grid tm-work-grid--${viewMode}`}>
-            {visibleWorks.map((work) => (
-              <WorkCard key={work.id} work={work} viewMode={viewMode} />
+        <div className="tm-select">
+          <span>TRẠNG THÁI</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
-          </section>
+          </select>
+        </div>
 
-          <nav className="tm-pagination" aria-label="Phân trang tác phẩm">
-            <button
-              type="button"
-              className="tm-pagination__btn"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={safePage === 1}
-              aria-label="Trang trước"
-            >
-              <ChevronLeft size={17} strokeWidth={2.4} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={safePage === item ? "tm-pagination__btn tm-pagination__btn--active" : "tm-pagination__btn"}
-                onClick={() => setPage(item)}
-              >
-                {item}
-              </button>
+        <div className="tm-select">
+          <span>SẮP XẾP</span>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
+          </select>
+        </div>
 
-            <button
-              type="button"
-              className="tm-pagination__btn"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={safePage === totalPages}
-              aria-label="Trang sau"
-            >
-              <ChevronRight size={17} strokeWidth={2.4} />
-            </button>
-          </nav>
-        </>
+        <div className="tm-view-switcher">
+          <button
+            className={`tm-view-switcher__btn ${viewMode === "grid" ? "tm-view-switcher__btn--active" : ""}`}
+            onClick={() => setViewMode("grid")}
+          >
+            <Grid3X3 size={15} /> Grid
+          </button>
+          <button
+            className={`tm-view-switcher__btn ${viewMode === "list" ? "tm-view-switcher__btn--active" : ""}`}
+            onClick={() => setViewMode("list")}
+          >
+            <List size={15} /> List
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="tm-empty">Đang tải danh sách tác phẩm...</div>
+      ) : visible.length === 0 ? (
+        <div className="tm-empty">
+          <Layers3 size={32} strokeWidth={1.25} />
+          <span>
+            {searchTerm
+              ? "Không tìm thấy tác phẩm phù hợp"
+              : "Chưa có tác phẩm nào được assign"}
+          </span>
+        </div>
       ) : (
-        <section className="tm-empty">
-          <div className="tm-empty__icon" aria-hidden="true">📚</div>
-          <strong>Chưa có tác phẩm nào</strong>
-          <p>Hãy tạo hoặc phân công tác phẩm mới.</p>
-        </section>
+        <div className={`tm-work-grid tm-work-grid--${viewMode}`}>
+          {visible.map((s) => (
+            <WorkCard key={s.seriesId} series={s} viewMode={viewMode} />
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="tm-pagination">
+          <button
+            className="tm-page-btn"
+            disabled={safePage === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            <ChevronLeft size={15} />
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              className={`tm-page-btn ${n === safePage ? "tm-page-btn--active" : ""}`}
+              onClick={() => setPage(n)}
+            >
+              {n}
+            </button>
+          ))}
+          <button
+            className="tm-page-btn"
+            disabled={safePage === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            <ChevronRight size={15} />
+          </button>
+        </div>
       )}
     </main>
   );
