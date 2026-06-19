@@ -12,6 +12,7 @@ import {
   History,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useNotificationCount } from "../../hooks/useNotificationCount";
 import "./Header.scss";
 
 export const Header = () => {
@@ -19,6 +20,8 @@ export const Header = () => {
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  const notifCount = useNotificationCount();
+
   const {
     showConfirmLogout,
     handleLogoutClick,
@@ -72,8 +75,20 @@ export const Header = () => {
             <span className="red-dot"></span>
           </button>
 
-          <button className="icon-btn">
+          <button
+            className="icon-btn header-bell"
+            onClick={() => {
+              if (user?.role === "ASSISTANT") {
+                navigate("/assistant/invitations");
+              }
+            }}
+          >
             <Bell size={22} strokeWidth={1.5} />
+            {notifCount > 0 && (
+              <span className="header-bell__badge">
+                {notifCount > 99 ? "99+" : notifCount}
+              </span>
+            )}
           </button>
         </div>
 

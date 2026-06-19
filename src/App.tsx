@@ -33,6 +33,7 @@ import AdminProposalReview from "./pages/admin/AdminProposalReview.tsx";
 import ScheduleAssignment from "./pages/admin/ScheduleAssignment/ScheduleAssignment.tsx";
 import MangakaChapters from "./pages/mangaka/MangakaChapters/MangakaChapters.tsx";
 import TantouSeriesChapters from "./pages/tantou/TantouSeriesChapters/TantouSeriesChapters.tsx";
+import AssistantInvitations from "./pages/assistant/AssistantInvitations/AssistantInvitations.tsx";
 
 function App() {
   return (
@@ -119,6 +120,7 @@ function App() {
             />
             <Route path="income" element={<AssistantIncome />} />
             <Route path="myjob" element={<AssistantMyJob />} />
+            <Route path="invitations" element={<AssistantInvitations />} />
           </Route>
         </Route>
       </Route>

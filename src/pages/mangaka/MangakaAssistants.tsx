@@ -1,191 +1,351 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  Clock,
+  Search,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import {
+  deactivateAssistant,
+  fetchActiveAssistants,
+  fetchPendingInvitations,
+  inviteAssistant,
+  searchAssistants,
+  type AssistantAssignmentRes,
+  type AssistantSearchRes,
+} from "../../services/assistantAssignmentService";
+import { getAvatarColor, getInitials } from "../../utils";
+import { formatDate } from "../../utils/date";
 import "./MangakaAssistants.scss";
 
-type Assistant = {
+function Avatar({
+  name,
+  url,
+  size = 40,
+}: {
   name: string;
-  role: string;
-  workload: number;
-  status: string;
-  online: boolean;
-  avatarTone: "mono" | "paper" | "ink";
-};
+  url?: string | null;
+  size?: number;
+}) {
+  if (url) {
+    return (
+      <img
+        className="ma-avatar"
+        src={url}
+        alt={name}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className="ma-avatar ma-avatar--initials"
+      style={{ width: size, height: size, background: getAvatarColor(name) }}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
 
-const assistants: Assistant[] = [
-  {
-    name: "Takahashi Ryu",
-    role: "VẼ NỀN (BACKGROUND)",
-    workload: 85,
-    status: "Đang thực hiện: Chap 14 - Phố cổ Hà Nội thế kỷ 19",
-    online: true,
-    avatarTone: "mono",
-  },
-  {
-    name: "Sato Mei",
-    role: "HIỆU ỨNG (SFX)",
-    workload: 20,
-    status: "Trạng thái: Sẵn sàng nhận Job mới",
-    online: false,
-    avatarTone: "paper",
-  },
-  {
-    name: "Nguyen Minh",
-    role: "ĐỔ BÓNG (SHADING)",
-    workload: 60,
-    status: "Đang thực hiện: Chap 14 - Đổ bóng nhân vật chính",
-    online: true,
-    avatarTone: "ink",
-  },
-];
+function SearchResultItem({
+  result,
+  onInvite,
+  inviting,
+}: {
+  result: AssistantSearchRes;
+  onInvite: (id: number) => void;
+  inviting: boolean;
+}) {
+  const rel = result.relationshipStatus;
+  const canInvite = rel === null || rel === "rejected" || rel === "inactive";
 
-const progressCards = [
-  { label: "BACKGROUND", done: 12, total: 15, active: true },
-  { label: "INK/SHADING", done: 8, total: 15, active: true },
-  { label: "SFX/EFFECTS", done: 0, total: 15, active: false },
-];
+  return (
+    <div className="ma-search-item">
+      <Avatar name={result.fullName} url={result.avatarUrl} size={36} />
+      <div className="ma-search-item__info">
+        <span className="ma-search-item__name">{result.fullName}</span>
+        <span className="ma-search-item__email">{result.email}</span>
+      </div>
+      {rel === "pending" && (
+        <span className="ma-rel-badge ma-rel-badge--pending">
+          <Clock size={11} /> Đang chờ
+        </span>
+      )}
+      {rel === "active" && (
+        <span className="ma-rel-badge ma-rel-badge--active">
+          <Check size={11} /> Đang cộng tác
+        </span>
+      )}
+      {canInvite && (
+        <button
+          className="ma-invite-btn"
+          onClick={() => onInvite(result.userId)}
+          disabled={inviting}
+        >
+          <UserPlus size={13} />
+          {inviting ? "Đang gửi..." : "Mời"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+type Tab = "active" | "pending";
 
 export default function MangakaAssistants() {
+  const [tab, setTab] = useState<Tab>("active");
+  const [actives, setActives] = useState<AssistantAssignmentRes[]>([]);
+  const [pendings, setPendings] = useState<AssistantAssignmentRes[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [showSearch, setShowSearch] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState<AssistantSearchRes[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [inviting, setInviting] = useState<number | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const [deactivating, setDeactivating] = useState<number | null>(null);
+
+  useEffect(() => {
+    Promise.all([fetchActiveAssistants(), fetchPendingInvitations()])
+      .then(([a, p]) => {
+        setActives(a);
+        setPendings(p);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      if (!keyword.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setSearching(true);
+      try {
+        const results = await searchAssistants(keyword);
+        setSearchResults(results);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [keyword]);
+
+  const handleInvite = async (assistantId: number) => {
+    setInviting(assistantId);
+    try {
+      const result = await inviteAssistant(assistantId);
+      setPendings((prev) => [result, ...prev]);
+
+      setSearchResults((prev) =>
+        prev.map((r) =>
+          r.userId === assistantId
+            ? { ...r, relationshipStatus: "pending" }
+            : r,
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInviting(null);
+    }
+  };
+
+  const handleDeactivate = async (assignmentId: number) => {
+    setDeactivating(assignmentId);
+    try {
+      await deactivateAssistant(assignmentId);
+      setActives((prev) => prev.filter((a) => a.assignmentId !== assignmentId));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeactivating(null);
+    }
+  };
+
   return (
     <section className="mangaka-assistants">
       <header className="assistants-hero">
         <div>
           <h1>Quản lý Nhân sự</h1>
-          <p>Điều phối 12 trợ lý đang thực hiện Series: "Hào Khí Thăng Long"</p>
+          <p>
+            {actives.length} trợ lý đang cộng tác · {pendings.length} lời mời
+            đang chờ
+          </p>
         </div>
-        <button className="invite-button" type="button">
-          <span aria-hidden="true">+</span>
-          Mời cộng tác viên mới
+        <button
+          className="invite-button"
+          type="button"
+          onClick={() => {
+            setShowSearch(true);
+            setTimeout(() => searchRef.current?.focus(), 100);
+          }}
+        >
+          <UserPlus size={16} />
+          Mời trợ lý mới
         </button>
       </header>
 
-      <div className="assistants-layout">
-        <main className="assistants-main">
-          <section className="assistant-list-panel">
-            <div className="assistant-list-header">
-              <h2>DANH SÁCH TRỢ LÝ</h2>
-              <div className="assistant-status-summary">
-                <strong>● 8 Online</strong>
-                <span>● 4 Offline</span>
-              </div>
-            </div>
-
-            <div className="assistant-grid">
-              {assistants.map((assistant) => (
-                <article className="assistant-card" key={assistant.name}>
-                  <div className="assistant-card__top">
-                    <div className={`assistant-avatar assistant-avatar--${assistant.avatarTone}`}>
-                      <span className={assistant.online ? "is-online" : "is-offline"} />
-                    </div>
-                    <div>
-                      <h3>{assistant.name}</h3>
-                      <strong>{assistant.role}</strong>
-                    </div>
-                    <button aria-label={`Tùy chọn ${assistant.name}`} type="button">
-                      ⋮
-                    </button>
-                  </div>
-
-                  <div className="workload-row">
-                    <span>Khối lượng công việc</span>
-                    <strong className={assistant.workload < 30 ? "is-low" : ""}>{assistant.workload}%</strong>
-                  </div>
-                  <div className="workload-track" aria-label={`${assistant.workload}%`}>
-                    <span style={{ width: `${assistant.workload}%` }} />
-                  </div>
-                  <p>{assistant.status}</p>
-                </article>
-              ))}
-
-              <button className="quick-add-card" type="button">
-                <span aria-hidden="true">+</span>
-                <strong>Thêm nhân sự nhanh</strong>
-              </button>
-            </div>
-          </section>
-
-          <section className="bottom-dashboard">
-            <article className="team-performance">
-              <h2>Hiệu suất 98%</h2>
-              <p>Team đang hoàn thành các task Shading nhanh hơn dự kiến 2 ngày.</p>
-              <div className="mini-team">
-                <span />
-                <span />
-                <span />
-                <strong>+9</strong>
-              </div>
-            </article>
-
-            <article className="chapter-progress">
-              <div className="chapter-progress__head">
-                <h2>Tiến độ Chapter 14</h2>
-                <span>Deadline: 25/10</span>
-              </div>
-              <div className="chapter-progress__grid">
-                {progressCards.map((card) => (
-                  <div className={card.active ? "is-active" : ""} key={card.label}>
-                    <strong>{card.label}</strong>
-                    <p>
-                      <b>{card.done}/{card.total}</b>
-                      <span>Trang</span>
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-        </main>
-
-        <aside className="assistants-sidebar">
-          <article className="payroll-panel">
-            <h2>
-              <span aria-hidden="true">▣</span>
-              Quản lý Tiền công
-            </h2>
-            <div className="payroll-total">
-              <span>TỔNG CHI TRẢ THÁNG 10</span>
-              <strong>45,200,000đ</strong>
-            </div>
-            <dl>
-              <div>
-                <dt>Lương cơ bản</dt>
-                <dd>32,000,000đ</dd>
-              </div>
-              <div>
-                <dt>Thưởng Deadline</dt>
-                <dd className="is-bonus">+8,500,000đ</dd>
-              </div>
-              <div>
-                <dt>Thuế/Phí</dt>
-                <dd className="is-tax">-4,700,000đ</dd>
-              </div>
-            </dl>
-            <button type="button">CHI TIẾT BẢNG LƯƠNG</button>
-          </article>
-
-          <article className="legal-panel">
-            <h2>
-              <span aria-hidden="true">§</span>
-              Hợp đồng & Pháp lý
-            </h2>
-            <div className="legal-item">
-              <span aria-hidden="true">□</span>
-              <div>
-                <strong>Hợp đồng Bảo mật (NDA)</strong>
-                <small>Cập nhật: 02/10/2023</small>
-              </div>
-            </div>
-            <div className="legal-item">
-              <span aria-hidden="true">©</span>
-              <div>
-                <strong>Điều khoản Bản quyền</strong>
-                <small>Tất cả trợ lý đã ký</small>
-              </div>
-            </div>
-            <button type="button">
-              <span aria-hidden="true">⇧</span>
-              Tải lên hợp đồng mới
+      {showSearch && (
+        <div className="ma-search-panel">
+          <div className="ma-search-panel__head">
+            <span>Tìm kiếm trợ lý</span>
+            <button
+              className="ma-search-panel__close"
+              onClick={() => {
+                setShowSearch(false);
+                setKeyword("");
+                setSearchResults([]);
+              }}
+            >
+              <X size={15} />
             </button>
-          </article>
-        </aside>
+          </div>
+          <div className="ma-search-box">
+            <Search size={15} className="ma-search-box__icon" />
+            <input
+              ref={searchRef}
+              placeholder="Nhập tên hoặc email trợ lý..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            {searching && <span className="ma-search-spinner" />}
+          </div>
+          {searchResults.length > 0 && (
+            <div className="ma-search-results">
+              {searchResults.map((r) => (
+                <SearchResultItem
+                  key={r.userId}
+                  result={r}
+                  onInvite={handleInvite}
+                  inviting={inviting === r.userId}
+                />
+              ))}
+            </div>
+          )}
+          {keyword.trim() && !searching && searchResults.length === 0 && (
+            <div className="ma-search-empty">Không tìm thấy trợ lý nào</div>
+          )}
+        </div>
+      )}
+
+      <div className="ma-tabs">
+        <button
+          className={`ma-tab ${tab === "active" ? "ma-tab--on" : ""}`}
+          onClick={() => setTab("active")}
+        >
+          <Users size={14} /> Đang cộng tác
+          <span className="ma-tab__count">{actives.length}</span>
+        </button>
+        <button
+          className={`ma-tab ${tab === "pending" ? "ma-tab--on" : ""}`}
+          onClick={() => setTab("pending")}
+        >
+          <Clock size={14} /> Đang chờ phản hồi
+          <span className="ma-tab__count">{pendings.length}</span>
+        </button>
       </div>
+
+      {loading ? (
+        <div className="ma-empty">Đang tải danh sách...</div>
+      ) : tab === "active" ? (
+        actives.length === 0 ? (
+          <div className="ma-empty">
+            <Users size={32} strokeWidth={1.25} />
+            <span>Chưa có trợ lý nào đang cộng tác</span>
+          </div>
+        ) : (
+          <div className="assistant-grid">
+            {actives.map((a) => (
+              <article key={a.assignmentId} className="assistant-card">
+                <div className="assistant-card__top">
+                  <Avatar
+                    name={a.assistantName}
+                    url={a.assistantAvatarUrl}
+                    size={48}
+                  />
+                  <div className="assistant-card__info">
+                    <h3>{a.assistantName}</h3>
+                    <span className="assistant-card__email">
+                      {a.assistantEmail}
+                    </span>
+                    <span className="ma-active-badge">● Đang cộng tác</span>
+                  </div>
+                  <button
+                    className="ma-remove-btn"
+                    title="Ngắt cộng tác"
+                    onClick={() => handleDeactivate(a.assignmentId)}
+                    disabled={deactivating === a.assignmentId}
+                  >
+                    {deactivating === a.assignmentId ? (
+                      "..."
+                    ) : (
+                      <UserMinus size={15} />
+                    )}
+                  </button>
+                </div>
+                <div className="assistant-card__footer">
+                  <span className="ma-joined-at">
+                    <Check size={11} /> Tham gia{" "}
+                    {formatDate(a.respondedAt ?? a.invitedAt)}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )
+      ) : pendings.length === 0 ? (
+        <div className="ma-empty">
+          <Clock size={32} strokeWidth={1.25} />
+          <span>Không có lời mời nào đang chờ</span>
+        </div>
+      ) : (
+        <div className="assistant-grid">
+          {pendings.map((p) => (
+            <article
+              key={p.assignmentId}
+              className="assistant-card assistant-card--pending"
+            >
+              <div className="assistant-card__top">
+                <Avatar
+                  name={p.assistantName}
+                  url={p.assistantAvatarUrl}
+                  size={48}
+                />
+                <div className="assistant-card__info">
+                  <h3>{p.assistantName}</h3>
+                  <span className="assistant-card__email">
+                    {p.assistantEmail}
+                  </span>
+                  <span className="ma-pending-badge">
+                    <Clock size={11} /> Chờ phản hồi
+                  </span>
+                </div>
+              </div>
+              <div className="assistant-card__footer">
+                <span className="ma-sent-at">
+                  Đã mời lúc {formatDate(p.invitedAt)}
+                </span>
+                <button
+                  className="ma-cancel-btn"
+                  onClick={() => handleDeactivate(p.assignmentId)}
+                  disabled={deactivating === p.assignmentId}
+                >
+                  <X size={12} /> Huỷ lời mời
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
