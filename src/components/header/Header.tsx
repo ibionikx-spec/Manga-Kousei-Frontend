@@ -71,6 +71,12 @@ export const Header = () => {
     navigate("/profile");
   };
 
+  const handleActivityHistoryClick = () => {
+    setShowPopup(false);
+    setActiveUtility(null);
+    navigate("/activity-history");
+  };
+
   const goTo = (path: string) => {
     setActiveUtility(null);
     setShowPopup(false);
@@ -313,7 +319,10 @@ export const Header = () => {
                   <UserRound size={16} strokeWidth={1.5} />
                   <span>Hồ sơ của bạn</span>
                 </li>
-                <li className="popup-menu-item">
+                <li
+                  className="popup-menu-item"
+                  onClick={handleActivityHistoryClick}
+                >
                   <History size={16} strokeWidth={1.5} />
                   <span>Lịch sử hoạt động</span>
                 </li>
