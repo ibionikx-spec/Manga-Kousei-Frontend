@@ -29,6 +29,7 @@ import AssistantIncome from "./pages/assistant/AssistantIncome.tsx";
 import AssistantMyJob from "./pages/assistant/AssistantMyJob.tsx";
 import MangakaSeriesDetail from "./pages/mangaka/MangakaSeriesDetail.tsx";
 import Profile from "./pages/profile/Profile.tsx";
+import Settings from "./pages/settings/Settings.tsx";
 import AdminProposalReview from "./pages/admin/AdminProposalReview.tsx";
 import ScheduleAssignment from "./pages/admin/ScheduleAssignment/ScheduleAssignment.tsx";
 import MangakaChapters from "./pages/mangaka/MangakaChapters/MangakaChapters.tsx";
@@ -55,6 +56,7 @@ function App() {
           }
         >
           <Route path="/profile" element={<Profile />} />
+          <Route path="/setting" element={<Settings />} />
         </Route>
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
           <Route path="/admin">
