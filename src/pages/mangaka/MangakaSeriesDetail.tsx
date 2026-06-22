@@ -28,9 +28,9 @@ import {
   type ChapterRes,
 } from "../../services/chapterService";
 import { getAvatarColor, getInitials } from "../../utils";
+import EditSeriesModal from "./components/EditSeriesModal/EditSeriesModal";
 import "./MangakaSeriesDetail.scss";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const WEEKDAY_LABELS: Record<number, string> = {
   1: "Thứ 2",
   2: "Thứ 3",
@@ -97,7 +97,6 @@ function chapterStatusMeta(status: string) {
 const COVER_PLACEHOLDER =
   "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop";
 
-// ── Component ─────────────────────────────────────────────────────────────────
 export default function MangakaSeriesDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -107,6 +106,7 @@ export default function MangakaSeriesDetail() {
   const [chapters, setChapters] = useState<ChapterRes[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"chapters" | "info">("chapters");
+  const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -171,7 +171,7 @@ export default function MangakaSeriesDetail() {
             >
               <BookOpen size={16} /> Quản lý Chapters
             </button>
-            <button className="btn-outline">
+            <button className="btn-outline" onClick={() => setShowEdit(true)}>
               <Pencil size={16} /> Chỉnh sửa Series
             </button>
             <button className="btn-primary">
@@ -443,6 +443,16 @@ export default function MangakaSeriesDetail() {
           </div>
         </div>
       </div>
+      {showEdit && series && (
+        <EditSeriesModal
+          series={series}
+          onClose={() => setShowEdit(false)}
+          onSaved={(updated) => {
+            setSeries(updated);
+            setShowEdit(false);
+          }}
+        />
+      )}
     </div>
   );
 }
