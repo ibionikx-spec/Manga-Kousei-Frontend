@@ -23,6 +23,7 @@ import {
   BanknoteArrowUp,
   StickyNotes,
   Bell,
+  FileImage,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import "./Sidebar.scss";
@@ -134,6 +135,7 @@ export const Sidebar = () => {
         label: "Công việc của tôi",
         icon: FileCheck,
       },
+      { path: "assistant/tasks", label: "Task của tôi", icon: FileImage },
       {
         path: "assistant/recource-warehouse",
         label: "Kho tài nguyên",

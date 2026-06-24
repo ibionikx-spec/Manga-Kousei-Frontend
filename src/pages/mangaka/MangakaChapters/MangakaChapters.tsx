@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   BookOpen,
   CheckCircle2,
   ChevronRight,
   Clock,
   FileText,
+  Pencil,
   Plus,
   X,
 } from "lucide-react";
@@ -49,6 +50,8 @@ export default function MangakaChapters() {
   const [formTitle, setFormTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!seriesId) return;
@@ -252,6 +255,19 @@ export default function MangakaChapters() {
                       </span>
                     </div>
                   )}
+
+                  <button
+                    className="mc-pages-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/mangaka/series/${seriesId}/chapters/${c.chapterId}/pages`,
+                      );
+                    }}
+                    title="Quản lý trang & giao việc"
+                  >
+                    <Pencil size={13} /> Trang
+                  </button>
 
                   <ChevronRight
                     size={15}

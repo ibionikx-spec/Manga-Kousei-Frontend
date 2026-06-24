@@ -1,5 +1,3 @@
-// src/pages/mangaka/MangakaChapters/MangakaChapters.scss
-
 $bg: #f4f7fb;
 $ink: #111827;
 $navy: #0d2544;
@@ -54,7 +52,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
 .mc-breadcrumb {
   display: flex;
   align-items: center;
@@ -98,7 +95,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   }
 }
 
-// ── Buttons ───────────────────────────────────────────────────────────────────
 .mc-btn-primary {
   display: inline-flex;
   align-items: center;
@@ -147,7 +143,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   }
 }
 
-// ── Create form card ──────────────────────────────────────────────────────────
 .mc-form-card {
   background: #fff;
   border: 1px solid $blue;
@@ -258,7 +253,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   text-transform: none !important;
 }
 
-// ── Chapter list ──────────────────────────────────────────────────────────────
 .mc-list {
   display: flex;
   flex-direction: column;
@@ -360,7 +354,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   }
 }
 
-// Chapter status badges
 .mc-status {
   display: inline-flex;
   align-items: center;
@@ -392,7 +385,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   }
 }
 
-// Progress bar
 .mc-progress-bar {
   width: 80px;
   height: 5px;
@@ -415,7 +407,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   white-space: nowrap;
 }
 
-// ── Page deadlines ────────────────────────────────────────────────────────────
 .mc-deadlines {
   border-top: 1px solid $border-soft;
   background: #fafbff;
@@ -477,7 +468,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   }
 }
 
-// Deadline status badges
 .mc-deadline-badge {
   display: inline-flex;
   align-items: center;
@@ -536,7 +526,6 @@ $shadow-block: 3px 3px 0 $navy-deep;
   color: $red;
 }
 
-// ── Empty ─────────────────────────────────────────────────────────────────────
 .mc-empty {
   display: flex;
   flex-direction: column;
@@ -550,5 +539,27 @@ $shadow-block: 3px 3px 0 $navy-deep;
 
   svg {
     color: $border-soft;
+  }
+}
+
+.mc-pages-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #edf4ff;
+  color: #0b66c6;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 150ms;
+
+  &:hover {
+    background: #0b66c6;
+    color: #fff;
+    border-color: #0b66c6;
   }
 }

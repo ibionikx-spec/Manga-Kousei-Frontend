@@ -34,6 +34,8 @@ import ScheduleAssignment from "./pages/admin/ScheduleAssignment/ScheduleAssignm
 import MangakaChapters from "./pages/mangaka/MangakaChapters/MangakaChapters.tsx";
 import TantouSeriesChapters from "./pages/tantou/TantouSeriesChapters/TantouSeriesChapters.tsx";
 import AssistantInvitations from "./pages/assistant/AssistantInvitations/AssistantInvitations.tsx";
+import MangakaPageEditor from "./pages/mangaka/MangakaPageEditor/MangakaPageEditor.tsx";
+import AssistantTasks from "./pages/assistant/AssistantTasks/AssistantTasks.tsx";
 
 function App() {
   return (
@@ -108,6 +110,10 @@ function App() {
               path="series/:seriesId/chapters"
               element={<MangakaChapters />}
             />
+            <Route
+              path="series/:seriesId/chapters/:chapterId/pages"
+              element={<MangakaPageEditor />}
+            />
           </Route>
         </Route>
         <Route element={<ProtectedRoute allowedRoles={["ASSISTANT"]} />}>
@@ -121,6 +127,7 @@ function App() {
             <Route path="income" element={<AssistantIncome />} />
             <Route path="myjob" element={<AssistantMyJob />} />
             <Route path="invitations" element={<AssistantInvitations />} />
+            <Route path="tasks" element={<AssistantTasks />} />
           </Route>
         </Route>
       </Route>
