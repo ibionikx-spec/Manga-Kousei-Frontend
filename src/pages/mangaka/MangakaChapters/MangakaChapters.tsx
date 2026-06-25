@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   BookOpen,
@@ -297,42 +297,48 @@ export default function MangakaChapters() {
                             cls: "ds-pending",
                           };
                           return (
-                            <div key={d.deadlineId} className="mc-deadline-row">
-                              <span className="mc-deadline-row__pages">
-                                Trang {d.pageFrom}
-                                {d.pageTo !== d.pageFrom ? `–${d.pageTo}` : ""}
-                              </span>
-                              <span className="mc-deadline-row__date">
-                                <Clock size={12} />
-                                {formatDate(d.dueDate)}
-                              </span>
-                              <span className={`mc-deadline-badge ${ds.cls}`}>
-                                {ds.label}
-                              </span>
-                              {(d.status === "pending" ||
-                                d.status === "revision") && (
-                                <button
-                                  className="mc-submit-btn"
-                                  onClick={() =>
-                                    handleSubmit(d.deadlineId, c.chapterId)
-                                  }
-                                  disabled={submitting === d.deadlineId}
-                                >
-                                  <CheckCircle2 size={13} />
-                                  {submitting === d.deadlineId
-                                    ? "Đang nộp..."
-                                    : "Đánh dấu đã nộp"}
-                                </button>
-                              )}
-                              {d.status === "submitted" && (
-                                <span className="mc-submitted-at">
-                                  Đã nộp {formatDate(d.submittedAt)}
+                            <Fragment key={d.deadlineId}>
+                              <div className="mc-deadline-row">
+                                <span className="mc-deadline-row__pages">
+                                  Trang {d.pageFrom}
+                                  {d.pageTo !== d.pageFrom
+                                    ? `–${d.pageTo}`
+                                    : ""}
                                 </span>
+                                <span className="mc-deadline-row__date">
+                                  <Clock size={12} />
+                                  {formatDate(d.dueDate)}
+                                </span>
+                                <span className={`mc-deadline-badge ${ds.cls}`}>
+                                  {ds.label}
+                                </span>
+                                {(d.status === "pending" ||
+                                  d.status === "revision") && (
+                                  <button
+                                    className="mc-submit-btn"
+                                    onClick={() =>
+                                      handleSubmit(d.deadlineId, c.chapterId)
+                                    }
+                                    disabled={submitting === d.deadlineId}
+                                  >
+                                    <CheckCircle2 size={13} />
+                                    {submitting === d.deadlineId
+                                      ? "Đang nộp..."
+                                      : "Đánh dấu đã nộp"}
+                                  </button>
+                                )}
+                              </div>
+                              {d.status === "revision" && d.reviewNote && (
+                                <div className="mc-review-note">
+                                  <span className="mc-review-note__icon">
+                                    💬
+                                  </span>
+                                  <span className="mc-review-note__text">
+                                    <strong>Biên tập:</strong> {d.reviewNote}
+                                  </span>
+                                </div>
                               )}
-                              {d.status === "late" && (
-                                <span className="mc-late-label">Trễ hạn</span>
-                              )}
-                            </div>
+                            </Fragment>
                           );
                         })}
                       </>
