@@ -29,6 +29,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 const DEADLINE_STATUS: Record<string, { label: string; cls: string }> = {
   pending: { label: "Chưa nộp", cls: "ds-pending" },
   submitted: { label: "Đã nộp", cls: "ds-submitted" },
+  revision: { label: "Yêu cầu chỉnh sửa", cls: "ds-pending" },
   late: { label: "Trễ hạn", cls: "ds-late" },
 };
 
@@ -308,7 +309,8 @@ export default function MangakaChapters() {
                               <span className={`mc-deadline-badge ${ds.cls}`}>
                                 {ds.label}
                               </span>
-                              {d.status === "pending" && (
+                              {(d.status === "pending" ||
+                                d.status === "revision") && (
                                 <button
                                   className="mc-submit-btn"
                                   onClick={() =>

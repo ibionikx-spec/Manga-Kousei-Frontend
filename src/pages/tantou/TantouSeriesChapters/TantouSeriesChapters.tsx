@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  AlertTriangle,
   BookOpen,
+  CheckCircle2,
   ChevronRight,
   Clock,
+  Eye,
   FileText,
+  Loader2,
   Pencil,
   Plus,
   Trash2,
+  Upload,
   X,
-  CheckCircle2,
 } from "lucide-react";
 import {
   fetchChaptersBySeriesTantou,
   setPageDeadline,
   updatePageDeadline,
   deletePageDeadline,
+  submitChapterToAdmin,
   type ChapterRes,
   type PageDeadline,
 } from "../../../services/chapterService";
@@ -32,6 +37,8 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 const DS_META: Record<string, { label: string; cls: string }> = {
   pending: { label: "Chưa nộp", cls: "tds-pending" },
   submitted: { label: "Đã nộp", cls: "tds-submitted" },
+  approved: { label: "Đã duyệt", cls: "tds-approved" },
+  revision: { label: "Yêu cầu sửa", cls: "tds-revision" },
   late: { label: "Trễ hạn", cls: "tds-late" },
 };
 
@@ -50,6 +57,7 @@ interface DeadlineForm {
 
 export default function TantouSeriesChapters() {
   const { seriesId } = useParams<{ seriesId: string }>();
+  const navigate = useNavigate();
 
   const [chapters, setChapters] = useState<ChapterRes[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +68,9 @@ export default function TantouSeriesChapters() {
   const [formError, setFormError] = useState("");
 
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [submittingToAdmin, setSubmittingToAdmin] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!seriesId) return;
@@ -175,6 +186,27 @@ export default function TantouSeriesChapters() {
     }
   };
 
+  const handleSubmitToAdmin = async (chapterId: number) => {
+    setSubmittingToAdmin(chapterId);
+    try {
+      const updated = await submitChapterToAdmin(chapterId);
+      setChapters((prev) =>
+        prev.map((c) =>
+          c.chapterId === chapterId
+            ? { ...c, chapterStatus: updated.chapterStatus }
+            : c,
+        ),
+      );
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Submit thất bại";
+      alert(msg);
+    } finally {
+      setSubmittingToAdmin(null);
+    }
+  };
+
   return (
     <div className="tsc-page">
       <div className="tsc-header">
@@ -208,6 +240,18 @@ export default function TantouSeriesChapters() {
               c.totalDeadlines > 0
                 ? Math.round((c.submittedDeadlines / c.totalDeadlines) * 100)
                 : 0;
+
+            const canSubmitToAdmin =
+              c.chapterStatus === "pages_submitted" &&
+              c.pageDeadlines.length > 0 &&
+              c.pageDeadlines.every((d) => d.status === "approved");
+
+            const hasRevision = c.pageDeadlines.some(
+              (d) => d.status === "revision",
+            );
+            const hasUnreviewed = c.pageDeadlines.some(
+              (d) => d.status === "submitted",
+            );
 
             return (
               <div
@@ -365,7 +409,8 @@ export default function TantouSeriesChapters() {
                             label: d.status,
                             cls: "tds-pending",
                           };
-                          const canEdit = d.status !== "submitted";
+                          const canEdit =
+                            d.status !== "submitted" && d.status !== "approved";
                           return (
                             <div
                               key={d.deadlineId}
@@ -416,6 +461,52 @@ export default function TantouSeriesChapters() {
                         })}
                       </>
                     ) : null}
+
+                    {canSubmitToAdmin && (
+                      <div className="tsc-submit-admin-row">
+                        <span className="tsc-submit-admin-hint">
+                          <CheckCircle2 size={13} />
+                          Tất cả nhóm trang đã được duyệt
+                        </span>
+                        <button
+                          className="tsc-btn-submit-admin"
+                          onClick={() => handleSubmitToAdmin(c.chapterId)}
+                          disabled={submittingToAdmin === c.chapterId}
+                        >
+                          {submittingToAdmin === c.chapterId ? (
+                            <>
+                              <Loader2 size={12} className="tsc-spin" /> Đang
+                              submit…
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={12} /> Nộp chương lên Admin
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {hasRevision && c.chapterStatus === "in_progress" && (
+                      <div className="tsc-revision-warning">
+                        <AlertTriangle size={13} />
+                        Có nhóm trang yêu cầu sửa lại — đang chờ mangaka nộp lại
+                      </div>
+                    )}
+
+                    {hasUnreviewed && c.chapterStatus === "pages_submitted" && (
+                      <div className="tsc-review-hint">
+                        <Eye size={13} />
+                        Vào{" "}
+                        <button
+                          className="tsc-review-hint__link"
+                          onClick={() => navigate("/tantou/approvals")}
+                        >
+                          Không gian Phê duyệt
+                        </button>{" "}
+                        để review nhóm trang
+                      </div>
+                    )}
 
                     {form?.chapterId !== c.chapterId && (
                       <button
