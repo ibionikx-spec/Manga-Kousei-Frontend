@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -18,6 +18,14 @@ import {
   Eye,
   ImageIcon,
 } from "lucide-react";
+import {
+  fetchPendingReviewChapters,
+  reviewPageGroup,
+  submitChapterToAdmin,
+  fetchDeadlinePages,
+  type ChapterRes,
+  type PageDeadline,
+} from "../../services/chapterService";
 import "./TantouApprovals.scss";
 
 interface Annotation {
@@ -41,6 +49,7 @@ interface Comment {
 
 interface MangaPage {
   id: number;
+  deadlineId: number;
   label: string;
   type: "single" | "spread";
   status: "pending" | "approved" | "revision";
@@ -52,94 +61,43 @@ interface Submission {
   author: string;
   chapterNum: number;
   chapterTitle: string;
-  version: string;
-  submissionType: "name" | "genga" | "cover";
   submittedAt: string;
   pages: MangaPage[];
 }
 
-const SUBMISSIONS: Submission[] = [
-  {
-    id: 1,
-    series: "Neon Genesis",
-    author: "Tanaka Ryo",
-    chapterNum: 42,
-    chapterTitle: "Sự Thức Tỉnh",
-    version: "V2",
-    submissionType: "name",
-    submittedAt: "2 giờ trước",
-    pages: [
-      { id: 1, label: "1–2", type: "spread", status: "approved" },
-      { id: 2, label: "3", type: "single", status: "approved" },
-      { id: 3, label: "4–5", type: "spread", status: "approved" },
-      { id: 4, label: "6", type: "single", status: "revision" },
-      { id: 5, label: "7", type: "single", status: "approved" },
-      { id: 6, label: "8", type: "single", status: "approved" },
-      { id: 7, label: "9", type: "single", status: "pending" },
-      { id: 8, label: "10–11", type: "spread", status: "pending" },
-      { id: 9, label: "12", type: "single", status: "pending" },
-      { id: 10, label: "13", type: "single", status: "pending" },
-      { id: 11, label: "14–15", type: "spread", status: "pending" },
-      { id: 12, label: "16", type: "single", status: "pending" },
-    ],
-  },
-  {
-    id: 2,
-    series: "Thiên Hà Vỡ",
-    author: "Suzuki Ken",
-    chapterNum: 12,
-    chapterTitle: "Cuộc Chiến",
-    version: "V1",
-    submissionType: "genga",
-    submittedAt: "5 giờ trước",
-    pages: [
-      { id: 101, label: "1", type: "single", status: "pending" },
-      { id: 102, label: "2–3", type: "spread", status: "pending" },
-      { id: 103, label: "4", type: "single", status: "pending" },
-    ],
-  },
-  {
-    id: 3,
-    series: "Học Viện Pháp Thuật",
-    author: "Miki Yasha",
-    chapterNum: 4,
-    chapterTitle: "Bìa Vol 4",
-    version: "V1",
-    submissionType: "cover",
-    submittedAt: "1 ngày trước",
-    pages: [{ id: 201, label: "Bìa", type: "single", status: "approved" }],
-  },
-];
+function mapStatus(s: PageDeadline["status"]): MangaPage["status"] {
+  if (s === "approved") return "approved";
+  if (s === "revision") return "revision";
+  return "pending";
+}
 
-const INIT_ANNOTATIONS: Annotation[] = [
-  { id: 1, x: 22, y: 40, color: "pink" },
-  { id: 2, x: 62, y: 65, color: "blue" },
-];
-
-const INIT_COMMENTS: Comment[] = [
-  {
-    id: 1,
-    annotationId: 1,
-    author: "Tanaka Ryo",
-    role: "Tác giả",
-    avatarColor: "#f97316",
-    initials: "TR",
-    time: "2 giờ trước",
-    body: "I tightened the framing here compared to the storyboard to emphasize the impact. Let me know if it feels too cramped.",
-    accentColor: "#f97316",
-  },
-  {
-    id: 2,
-    annotationId: 2,
-    author: "Bạn (Biên tập)",
-    role: "Biên tập",
-    avatarColor: "#1d4ed8",
-    initials: "BT",
-    time: "5 phút trước",
-    body: "The dynamic lines look great. Ensure enough negative space for the dialogue bubble on the right.",
-    accentColor: "#1d4ed8",
-  },
-];
+function toSubmission(c: ChapterRes): Submission {
+  return {
+    id: c.chapterId,
+    series: c.seriesTitle ?? "—",
+    author: c.mangakaName ?? "—",
+    chapterNum: c.chapterNumber,
+    chapterTitle: c.title ?? "",
+    submittedAt: c.createdAt
+      ? new Date(c.createdAt).toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—",
+    pages: c.pageDeadlines.map((d) => ({
+      id: d.deadlineId,
+      deadlineId: d.deadlineId,
+      label:
+        d.pageFrom === d.pageTo
+          ? String(d.pageFrom)
+          : `${d.pageFrom}–${d.pageTo}`,
+      type: d.pageTo - d.pageFrom >= 1 ? "spread" : "single",
+      status: mapStatus(d.status),
+    })),
+  };
+}
 
 const DIALOGUE_LINES = [
   { speaker: "Kira", text: "Sức mạnh này… không thể là của con người!" },
@@ -152,19 +110,25 @@ const SFX_LIST = [
   { raw: "バキ", translated: "BAKI" },
 ];
 
-const TYPE_LABEL: Record<Submission["submissionType"], string> = {
-  name: "BẢN NAME",
-  genga: "GENGA",
-  cover: "BÌA",
-};
-
 export default function TantouApprovals() {
-  const [activeId, setActiveId] = useState(1);
-  const [activePageId, setActivePageId] = useState(11);
+  const [chapters, setChapters] = useState<ChapterRes[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const deadlineImagesRef = useRef<
+    Record<number, { pageNumber: number; fileUrl: string }[]>
+  >({});
+  const [deadlineImages, setDeadlineImages] = useState<
+    Record<number, { pageNumber: number; fileUrl: string }[]>
+  >({});
+  const [loadingImages, setLoadingImages] = useState(false);
+
+  const [imageIndex, setImageIndex] = useState(0);
+
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [activePageId, setActivePageId] = useState<number | null>(null);
   const [tab, setTab] = useState<"comments" | "dialogue">("comments");
-  const [annotations, setAnnotations] =
-    useState<Annotation[]>(INIT_ANNOTATIONS);
-  const [comments, setComments] = useState<Comment[]>(INIT_COMMENTS);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [reply, setReply] = useState("");
   const [activeAnn, setActiveAnn] = useState<number | null>(null);
   const [pinMode, setPinMode] = useState(false);
@@ -175,9 +139,94 @@ export default function TantouApprovals() {
   const [sfxEdits, setSfxEdits] = useState<Record<number, string>>(
     Object.fromEntries(SFX_LIST.map((s, i) => [i, s.translated])),
   );
+  const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const sub = SUBMISSIONS.find((s) => s.id === activeId)!;
+  const loadImagesForDeadline = useCallback(async (deadlineId: number) => {
+    if (deadlineImagesRef.current[deadlineId]) {
+      setImageIndex(0);
+      return;
+    }
+    setLoadingImages(true);
+    setImageIndex(0);
+    try {
+      const pages = await fetchDeadlinePages(deadlineId);
+      const mapped = pages.map((p) => ({
+        pageNumber: p.pageNumber,
+        fileUrl: p.fileUrl,
+      }));
+      deadlineImagesRef.current[deadlineId] = mapped;
+      setDeadlineImages((prev) => ({ ...prev, [deadlineId]: mapped }));
+    } catch (err) {
+      console.error("Load ảnh thất bại", err);
+    } finally {
+      setLoadingImages(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadChapters = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchPendingReviewChapters();
+        setChapters(data);
+        if (data.length > 0) {
+          const first = data[0];
+          setActiveId(first.chapterId);
+          const firstDeadline = first.pageDeadlines[0];
+          if (firstDeadline) {
+            setActivePageId(firstDeadline.deadlineId);
+            loadImagesForDeadline(firstDeadline.deadlineId);
+          }
+        }
+      } catch (err) {
+        console.error("Load thất bại", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadChapters();
+  }, [loadImagesForDeadline]);
+
+  const SUBMISSIONS: Submission[] = chapters.map(toSubmission);
+  const sub = SUBMISSIONS.find((s) => s.id === activeId) ?? SUBMISSIONS[0];
+
+  if (!loading && SUBMISSIONS.length === 0) {
+    return (
+      <div
+        className="ta-root"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ textAlign: "center", color: "#94a3b8" }}>
+          <CheckCircle2 size={40} strokeWidth={1.25} style={{ opacity: 0.3 }} />
+          <p style={{ marginTop: 12, fontSize: 14 }}>
+            Không có chapter nào cần duyệt
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading || !sub) {
+    return (
+      <div
+        className="ta-root"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span style={{ color: "#94a3b8", fontSize: 14 }}>Đang tải…</span>
+      </div>
+    );
+  }
+
   const page = sub.pages.find((p) => p.id === activePageId) ?? sub.pages[0];
   const getStatus = (p: MangaPage) => pageOverrides[p.id] ?? p.status;
 
@@ -194,6 +243,11 @@ export default function TantouApprovals() {
     (p) => getStatus(p) === "pending",
   ).length;
   const pct = Math.round((approved / sub.pages.length) * 100);
+  const allApproved =
+    sub.pages.length > 0 && sub.pages.every((p) => getStatus(p) === "approved");
+
+  const currentImages = page ? (deadlineImages[page.deadlineId] ?? []) : [];
+  const currentImage = currentImages[imageIndex] ?? null;
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!pinMode || !canvasRef.current) return;
@@ -225,15 +279,97 @@ export default function TantouApprovals() {
     setReply("");
   };
 
-  const approvePage = () => {
-    setPageOverrides((p) => ({ ...p, [activePageId]: "approved" }));
-    const idx = sub.pages.findIndex((p) => p.id === activePageId);
-    const next = sub.pages[idx + 1];
-    if (next) setActivePageId(next.id);
+  const handleSelectPage = (p: MangaPage) => {
+    setActivePageId(p.id);
+    setImageIndex(0);
+    loadImagesForDeadline(p.deadlineId);
+    setAnnotations([]);
+    setActiveAnn(null);
   };
 
-  const revisionPage = () =>
-    setPageOverrides((p) => ({ ...p, [activePageId]: "revision" }));
+  const approvePage = async () => {
+    if (!page) return;
+    try {
+      await reviewPageGroup(page.deadlineId, { decision: "approved" });
+      setPageOverrides((prev) => ({ ...prev, [page.id]: "approved" }));
+      setChapters((prev) =>
+        prev.map((c) => {
+          if (c.chapterId !== activeId) return c;
+          return {
+            ...c,
+            pageDeadlines: c.pageDeadlines.map((d) =>
+              d.deadlineId === page.deadlineId
+                ? { ...d, status: "approved" as const }
+                : d,
+            ),
+          };
+        }),
+      );
+      const idx = sub.pages.findIndex((p2) => p2.id === page.id);
+      const next = sub.pages
+        .slice(idx + 1)
+        .find((p2) => getStatus(p2) === "pending");
+      if (next) handleSelectPage(next);
+    } catch (err) {
+      console.error("Approve thất bại", err);
+    }
+  };
+
+  const revisionPage = async () => {
+    if (!page) return;
+    try {
+      await reviewPageGroup(page.deadlineId, { decision: "revision" });
+      setPageOverrides((prev) => ({ ...prev, [page.id]: "revision" }));
+      setChapters((prev) =>
+        prev.map((c) => {
+          if (c.chapterId !== activeId) return c;
+          return {
+            ...c,
+            pageDeadlines: c.pageDeadlines.map((d) =>
+              d.deadlineId === page.deadlineId
+                ? { ...d, status: "revision" as const }
+                : d,
+            ),
+          };
+        }),
+      );
+    } catch (err) {
+      console.error("Revision thất bại", err);
+    }
+  };
+
+  const handleSubmitToAdmin = async () => {
+    if (!activeId) return;
+    setSubmitting(true);
+    try {
+      await submitChapterToAdmin(activeId);
+      setChapters((prev) => {
+        const remaining = prev.filter((c) => c.chapterId !== activeId);
+        if (remaining.length > 0) {
+          setActiveId(remaining[0].chapterId);
+          const firstD = remaining[0].pageDeadlines[0];
+          if (firstD) {
+            setActivePageId(firstD.deadlineId);
+            loadImagesForDeadline(firstD.deadlineId);
+          }
+        } else {
+          setActiveId(null);
+          setActivePageId(null);
+        }
+        return remaining;
+      });
+      setPageOverrides({});
+      setAnnotations([]);
+      setComments([]);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Submit thất bại";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const curStatus = getStatus(page);
 
@@ -250,15 +386,22 @@ export default function TantouApprovals() {
             className={`ta-sub ${activeId === s.id ? "ta-sub--active" : ""}`}
             onClick={() => {
               setActiveId(s.id);
-              setActivePageId(s.pages[0].id);
+              const firstD = s.pages[0];
+              if (firstD) {
+                setActivePageId(firstD.id);
+                loadImagesForDeadline(firstD.deadlineId);
+              }
+              setPageOverrides({});
+              setAnnotations([]);
+              setComments([]);
+              setActiveAnn(null);
+              setImageIndex(0);
             }}
           >
             <div className="ta-sub__row1">
               <span className="ta-sub__series">{s.series}</span>
-              <span
-                className={`ta-sub__type ta-sub__type--${s.submissionType}`}
-              >
-                {TYPE_LABEL[s.submissionType]}
+              <span className="ta-sub__type ta-sub__type--genga">
+                Ch.{s.chapterNum}
               </span>
             </div>
             <div className="ta-sub__row2">
@@ -277,10 +420,16 @@ export default function TantouApprovals() {
             <span>{sub.series}</span>
             <ChevronRight size={13} />
             <span>
-              Chương {sub.chapterNum}: {sub.chapterTitle}
+              Chương {sub.chapterNum}
+              {sub.chapterTitle ? `: ${sub.chapterTitle}` : ""}
             </span>
             <ChevronRight size={13} />
-            <strong>Bản Name ({sub.version})</strong>
+            <strong>
+              Trang {page.label}
+              {currentImages.length > 1
+                ? ` (${imageIndex + 1}/${currentImages.length})`
+                : ""}
+            </strong>
           </nav>
         </div>
 
@@ -325,7 +474,7 @@ export default function TantouApprovals() {
             <div className="ta-prog__fill" style={{ width: `${pct}%` }} />
           </div>
           <span className="ta-prog__label">
-            {approved}/{sub.pages.length} trang đã duyệt
+            {approved}/{sub.pages.length} nhóm trang đã duyệt
           </span>
         </div>
 
@@ -337,185 +486,86 @@ export default function TantouApprovals() {
             onClick={handleCanvasClick}
           >
             <div className="ta-art">
-              <svg
-                viewBox="0 0 520 370"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ width: "100%", height: "100%" }}
-              >
-                <rect width="520" height="370" fill="#ede9e3" />
-                <rect x="0" y="0" width="252" height="370" fill="#f5f2ed" />
-                <rect x="256" y="0" width="264" height="370" fill="#eae7e0" />
-                <line
-                  x1="254"
-                  y1="0"
-                  x2="254"
-                  y2="370"
-                  stroke="#c0bdb7"
-                  strokeWidth="3"
-                />
-
-                {Array.from({ length: 28 }).map((_, i) => {
-                  const a = (i / 28) * Math.PI * 2;
-                  const cx = 126,
-                    cy = 185,
-                    r1 = 55,
-                    r2 = 220;
-                  return (
-                    <line
-                      key={i}
-                      x1={cx + Math.cos(a) * r1}
-                      y1={cy + Math.sin(a) * r1}
-                      x2={cx + Math.cos(a) * r2}
-                      y2={cy + Math.sin(a) * r2}
-                      stroke="#c8c5be"
-                      strokeWidth={i % 4 === 0 ? "2" : "0.9"}
-                      strokeOpacity="0.55"
-                    />
-                  );
-                })}
-
-                {Array.from({ length: 22 }).map((_, i) => {
-                  const a = (i / 22) * Math.PI * 2;
-                  const cx = 388,
-                    cy = 185,
-                    r1 = 38,
-                    r2 = 195;
-                  return (
-                    <line
-                      key={`r${i}`}
-                      x1={cx + Math.cos(a) * r1}
-                      y1={cy + Math.sin(a) * r1}
-                      x2={cx + Math.cos(a) * r2}
-                      y2={cy + Math.sin(a) * r2}
-                      stroke="#c2bfb8"
-                      strokeWidth={i % 5 === 0 ? "1.5" : "0.7"}
-                      strokeOpacity="0.45"
-                    />
-                  );
-                })}
-
-                <polygon
-                  points="170,105 200,160 165,172 194,228 128,168 160,153 138,108"
-                  fill="white"
-                  opacity="0.75"
-                />
-                <polygon
-                  points="174,110 198,157 168,169 190,222 134,166 163,150 142,112"
-                  fill="#dedad4"
-                  opacity="0.45"
-                />
-
-                <ellipse
-                  cx="102"
-                  cy="225"
-                  rx="30"
-                  ry="55"
-                  fill="#3e3c39"
-                  opacity="0.6"
-                />
-                <ellipse
-                  cx="102"
-                  cy="162"
-                  rx="22"
-                  ry="24"
-                  fill="#343230"
-                  opacity="0.7"
-                />
-                <polygon
-                  points="87,146 81,126 92,149"
-                  fill="#282723"
-                  opacity="0.85"
-                />
-                <polygon
-                  points="98,139 96,116 105,143"
-                  fill="#282723"
-                  opacity="0.85"
-                />
-                <polygon
-                  points="112,142 116,120 122,146"
-                  fill="#282723"
-                  opacity="0.85"
-                />
-
-                <ellipse
-                  cx="382"
-                  cy="208"
-                  rx="27"
-                  ry="48"
-                  fill="#3e3c39"
-                  opacity="0.65"
-                />
-                <ellipse
-                  cx="382"
-                  cy="153"
-                  rx="20"
-                  ry="21"
-                  fill="#343230"
-                  opacity="0.75"
-                />
-                <polygon
-                  points="369,138 364,118 374,141"
-                  fill="#282723"
-                  opacity="0.85"
-                />
-                <polygon
-                  points="380,132 378,110 388,136"
-                  fill="#282723"
-                  opacity="0.85"
-                />
-                <polygon
-                  points="391,136 395,114 400,139"
-                  fill="#282723"
-                  opacity="0.85"
-                />
-
-                {[
-                  [305, 72, 420, 152],
-                  [292, 100, 414, 170],
-                  [318, 240, 430, 215],
-                  [296, 260, 418, 238],
-                ].map(([x1, y1, x2, y2], i) => (
-                  <line
-                    key={`al${i}`}
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke="#aaa8a2"
-                    strokeWidth="1.2"
-                    opacity="0.35"
-                  />
-                ))}
-
-                <rect
-                  x="1"
-                  y="1"
-                  width="251"
-                  height="368"
-                  fill="none"
-                  stroke="#928f8a"
-                  strokeWidth="1.5"
-                />
-                <rect
-                  x="256"
-                  y="1"
-                  width="263"
-                  height="368"
-                  fill="none"
-                  stroke="#928f8a"
-                  strokeWidth="1.5"
-                />
-
-                <text
-                  x="260"
-                  y="358"
-                  fontSize="8.5"
-                  fill="#9c9891"
-                  fontFamily="sans-serif"
+              {loadingImages ? (
+                <div
+                  style={{
+                    width: 520,
+                    height: 370,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#ede9e3",
+                    color: "#94a3b8",
+                    fontSize: 13,
+                  }}
                 >
-                  NEON GENESIS Ch.42 • P.14-15
-                </text>
-              </svg>
+                  Đang tải ảnh…
+                </div>
+              ) : currentImage ? (
+                <img
+                  src={currentImage.fileUrl}
+                  alt={`Trang ${currentImage.pageNumber}`}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    display: "block",
+                    maxWidth: 520,
+                  }}
+                  draggable={false}
+                />
+              ) : (
+                <svg
+                  viewBox="0 0 520 370"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ width: "100%", height: "100%" }}
+                >
+                  <rect width="520" height="370" fill="#ede9e3" />
+                  <rect x="0" y="0" width="252" height="370" fill="#f5f2ed" />
+                  <rect x="256" y="0" width="264" height="370" fill="#eae7e0" />
+                  <line
+                    x1="254"
+                    y1="0"
+                    x2="254"
+                    y2="370"
+                    stroke="#c0bdb7"
+                    strokeWidth="3"
+                  />
+                  {Array.from({ length: 28 }).map((_, i) => {
+                    const a = (i / 28) * Math.PI * 2;
+                    return (
+                      <line
+                        key={i}
+                        x1={126 + Math.cos(a) * 55}
+                        y1={185 + Math.sin(a) * 55}
+                        x2={126 + Math.cos(a) * 220}
+                        y2={185 + Math.sin(a) * 220}
+                        stroke="#c8c5be"
+                        strokeWidth={i % 4 === 0 ? "2" : "0.9"}
+                        strokeOpacity="0.55"
+                      />
+                    );
+                  })}
+                  <text
+                    x="260"
+                    y="200"
+                    fontSize="13"
+                    fill="#9c9891"
+                    fontFamily="sans-serif"
+                    textAnchor="middle"
+                  >
+                    Mangaka chưa upload ảnh trang {page.label}
+                  </text>
+                  <text
+                    x="260"
+                    y="358"
+                    fontSize="8.5"
+                    fill="#9c9891"
+                    fontFamily="sans-serif"
+                  >
+                    {sub.series} Ch.{sub.chapterNum}
+                  </text>
+                </svg>
+              )}
             </div>
 
             {annotations.map((ann) => (
@@ -545,26 +595,41 @@ export default function TantouApprovals() {
           <button
             className="ta-strip__nav"
             onClick={() => {
-              const i = sub.pages.findIndex((p) => p.id === activePageId);
-              if (i > 0) setActivePageId(sub.pages[i - 1].id);
+              const i = sub.pages.findIndex((p2) => p2.id === activePageId);
+              if (i > 0) handleSelectPage(sub.pages[i - 1]);
             }}
           >
             <ChevronLeft size={15} />
           </button>
+
           <div className="ta-strip__list">
-            {sub.pages.map((p) => {
-              const st = getStatus(p);
+            {sub.pages.map((p2) => {
+              const st = getStatus(p2);
+              const imgs = deadlineImages[p2.deadlineId];
+              const thumb = imgs?.[0]?.fileUrl;
               return (
                 <button
-                  key={p.id}
-                  className={`ta-thumb ${activePageId === p.id ? "ta-thumb--active" : ""} ta-thumb--${st}`}
-                  onClick={() => setActivePageId(p.id)}
-                  title={`Trang ${p.label}`}
+                  key={p2.id}
+                  className={`ta-thumb ${activePageId === p2.id ? "ta-thumb--active" : ""} ta-thumb--${st}`}
+                  onClick={() => handleSelectPage(p2)}
+                  title={`Trang ${p2.label}`}
                 >
                   <div className="ta-thumb__art">
-                    <ImageIcon size={14} strokeWidth={1.25} />
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt={`Trang ${p2.label}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <ImageIcon size={14} strokeWidth={1.25} />
+                    )}
                   </div>
-                  <span className="ta-thumb__lbl">{p.label}</span>
+                  <span className="ta-thumb__lbl">{p2.label}</span>
                   {st === "approved" && (
                     <div className="ta-thumb__dot ta-thumb__dot--ok">
                       <Check size={8} />
@@ -579,17 +644,54 @@ export default function TantouApprovals() {
               );
             })}
           </div>
+
           <button
             className="ta-strip__nav"
             onClick={() => {
-              const i = sub.pages.findIndex((p) => p.id === activePageId);
-              if (i < sub.pages.length - 1)
-                setActivePageId(sub.pages[i + 1].id);
+              const i = sub.pages.findIndex((p2) => p2.id === activePageId);
+              if (i < sub.pages.length - 1) handleSelectPage(sub.pages[i + 1]);
             }}
           >
             <ChevronRight size={15} />
           </button>
         </div>
+
+        {currentImages.length > 1 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "4px 16px",
+              background: "#fff",
+              borderTop: "1px solid #e2e8f0",
+              fontSize: 12,
+              color: "#64748b",
+            }}
+          >
+            <button
+              className="ta-strip__nav"
+              onClick={() => setImageIndex((i) => Math.max(0, i - 1))}
+              disabled={imageIndex === 0}
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <span>
+              Trang {currentImage?.pageNumber} ({imageIndex + 1}/
+              {currentImages.length})
+            </span>
+            <button
+              className="ta-strip__nav"
+              onClick={() =>
+                setImageIndex((i) => Math.min(currentImages.length - 1, i + 1))
+              }
+              disabled={imageIndex === currentImages.length - 1}
+            >
+              <ChevronRight size={13} />
+            </button>
+          </div>
+        )}
       </main>
 
       <aside className="ta-panel">
@@ -605,13 +707,35 @@ export default function TantouApprovals() {
         </div>
 
         <div className="ta-actions">
-          <button className="ta-btn ta-btn--approve" onClick={approvePage}>
+          <button
+            className="ta-btn ta-btn--approve"
+            onClick={approvePage}
+            disabled={curStatus === "approved"}
+          >
             <CheckCircle2 size={17} strokeWidth={1.75} /> Phê duyệt
           </button>
-          <button className="ta-btn ta-btn--revision" onClick={revisionPage}>
+          <button
+            className="ta-btn ta-btn--revision"
+            onClick={revisionPage}
+            disabled={curStatus === "revision"}
+          >
             <RotateCcw size={15} strokeWidth={1.75} /> Yêu cầu sửa
           </button>
         </div>
+
+        {allApproved && (
+          <div style={{ padding: "0 18px 12px" }}>
+            <button
+              className="ta-btn ta-btn--approve"
+              style={{ width: "100%", background: "#15803d" }}
+              onClick={handleSubmitToAdmin}
+              disabled={submitting}
+            >
+              <CheckCircle2 size={17} strokeWidth={1.75} />
+              {submitting ? "Đang submit…" : "Nộp chương lên Admin"}
+            </button>
+          </div>
+        )}
 
         <div className="ta-tabs">
           <button
@@ -750,7 +874,8 @@ export default function TantouApprovals() {
           <div className="ta-chap-prog">
             <div className="ta-chap-prog__row1">
               <span className="ta-chap-prog__name">
-                <BookOpen size={12} /> Ch.{sub.chapterNum} — {sub.chapterTitle}
+                <BookOpen size={12} /> Ch.{sub.chapterNum}
+                {sub.chapterTitle ? ` — ${sub.chapterTitle}` : ""}
               </span>
               <span className="ta-chap-prog__pct">{pct}%</span>
             </div>

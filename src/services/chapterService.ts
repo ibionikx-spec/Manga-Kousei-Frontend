@@ -10,9 +10,11 @@ export interface PageDeadline {
   pageFrom: number;
   pageTo: number;
   dueDate: string;
-  status: "pending" | "submitted" | "late";
+  status: "pending" | "submitted" | "approved" | "revision" | "late";
   submittedAt: string | null;
   setByName: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
 }
 
 export interface ChapterRes {
@@ -25,6 +27,11 @@ export interface ChapterRes {
   pageDeadlines: PageDeadline[];
   totalDeadlines: number;
   submittedDeadlines: number;
+
+  seriesId?: number;
+  seriesTitle?: string;
+  mangakaName?: string;
+  mangakaAvatarUrl?: string;
 }
 
 export const fetchChaptersBySeriesMangaka = (
@@ -79,3 +86,37 @@ export const updatePageDeadline = (
 
 export const deletePageDeadline = (deadlineId: number): Promise<void> =>
   api.delete(`/tantou/page-deadlines/${deadlineId}`);
+
+export const fetchPendingReviewChapters = (): Promise<ChapterRes[]> =>
+  api
+    .get<ApiResponse<ChapterRes[]>>("/tantou/chapters/pending-review")
+    .then((r) => r.data.data ?? []);
+
+export const reviewPageGroup = (
+  deadlineId: number,
+  body: { decision: "approved" | "revision"; note?: string },
+): Promise<PageDeadline> =>
+  api
+    .patch<
+      ApiResponse<PageDeadline>
+    >(`/tantou/page-deadlines/${deadlineId}/review`, body)
+    .then((r) => r.data.data);
+
+export const submitChapterToAdmin = (chapterId: number): Promise<ChapterRes> =>
+  api
+    .patch<
+      ApiResponse<ChapterRes>
+    >(`/tantou/chapters/${chapterId}/submit-to-admin`)
+    .then((r) => r.data.data);
+
+export interface PageSimple {
+  pageNumber: number;
+  fileUrl: string;
+}
+
+export const fetchDeadlinePages = (deadlineId: number): Promise<PageSimple[]> =>
+  api
+    .get<
+      ApiResponse<{ pageNumber: number; fileUrl: string }[]>
+    >(`/tantou/page-deadlines/${deadlineId}/pages`)
+    .then((r) => r.data.data ?? []);
