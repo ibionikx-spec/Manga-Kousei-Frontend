@@ -563,3 +563,31 @@ $shadow-block: 3px 3px 0 $navy-deep;
     border-color: #0b66c6;
   }
 }
+
+.mc-review-note {
+  margin: -4px 12px 8px;
+  padding: 8px 12px;
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 7px 7px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.55;
+
+  &__icon {
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+
+  &__text {
+    color: #78350f;
+    white-space: pre-wrap;
+    strong {
+      font-weight: 700;
+      color: #92400e;
+    }
+  }
+}
