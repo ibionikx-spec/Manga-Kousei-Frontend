@@ -32,6 +32,8 @@ export interface ChapterRes {
   seriesTitle?: string;
   mangakaName?: string;
   mangakaAvatarUrl?: string;
+
+  adminNote?: string;
 }
 
 export const fetchChaptersBySeriesMangaka = (

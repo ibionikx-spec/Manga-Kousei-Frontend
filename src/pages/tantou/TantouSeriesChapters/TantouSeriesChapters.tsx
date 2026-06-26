@@ -11,6 +11,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  ShieldAlert,
   Trash2,
   Upload,
   X,
@@ -505,6 +506,18 @@ export default function TantouSeriesChapters() {
                           Không gian Phê duyệt
                         </button>{" "}
                         để review nhóm trang
+                      </div>
+                    )}
+
+                    {c.adminNote && c.chapterStatus === "pending_publish" && (
+                      <div className="tsc-admin-note">
+                        <div className="tsc-admin-note__head">
+                          <ShieldAlert size={13} />
+                          <span>
+                            Góp ý từ Admin — cần chỉnh sửa trước khi đăng
+                          </span>
+                        </div>
+                        <p className="tsc-admin-note__text">{c.adminNote}</p>
                       </div>
                     )}
 
