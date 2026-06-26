@@ -1,23 +1,25 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  Bell,
   CheckCircle2,
   Clock3,
-  FileCheck2,
   Filter,
   History,
-  KeyRound,
-  LogIn,
   Search,
-  Settings,
-  ShieldCheck,
-  UserRound,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import { useActivityLogs } from "../../hooks/useActivityLogs";
+import {
+  getActionIcon,
+  getActionLabel,
+  getCategoryVariant,
+  CATEGORY_LABELS,
+} from "../../components/activityLog/activityLogUtils";
+import type { LogCategory } from "../../services/activityLogService";
 import "./ActivityHistory.scss";
-
-type ActivityType = "all" | "account" | "security" | "workflow" | "system";
-type ActivityStatus = "all" | "success" | "pending" | "warning";
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Quản trị viên",
@@ -26,113 +28,57 @@ const roleLabels: Record<string, string> = {
   ASSISTANT: "Trợ lý",
 };
 
-const activities = [
-  {
-    id: 1,
-    title: "Đăng nhập thành công",
-    detail: "Tài khoản truy cập từ thiết bị Windows tại Asia/Saigon.",
-    time: "Hôm nay, 21:44",
-    type: "security",
-    status: "success",
-    icon: LogIn,
-  },
-  {
-    id: 2,
-    title: "Mở bảng điều khiển toà soạn",
-    detail: "Trang tổng quan được tải với dữ liệu doanh thu và xét duyệt mới nhất.",
-    time: "Hôm nay, 21:43",
-    type: "workflow",
-    status: "success",
-    icon: History,
-  },
-  {
-    id: 3,
-    title: "Cập nhật cài đặt hệ thống",
-    detail: "Thay đổi tuỳ chọn giao diện, thông báo và phiên đăng nhập.",
-    time: "Hôm nay, 21:38",
-    type: "system",
-    status: "success",
-    icon: Settings,
-  },
-  {
-    id: 4,
-    title: "Kiểm tra hồ sơ cá nhân",
-    detail: "Thông tin vai trò, email và trạng thái xác minh đã được mở xem.",
-    time: "Hôm qua, 16:10",
-    type: "account",
-    status: "success",
-    icon: UserRound,
-  },
-  {
-    id: 5,
-    title: "Nhắc xét duyệt bản name",
-    detail: "Một tác vụ xét duyệt đang chờ phản hồi từ ban biên tập.",
-    time: "18/06/2026, 09:20",
-    type: "workflow",
-    status: "pending",
-    icon: FileCheck2,
-  },
-  {
-    id: 6,
-    title: "Cảnh báo bảo mật",
-    detail: "Xác thực hai lớp chưa được bật cho tài khoản hiện tại.",
-    time: "15/06/2026, 11:45",
-    type: "security",
-    status: "warning",
-    icon: KeyRound,
-  },
-  {
-    id: 7,
-    title: "Đồng bộ thông báo",
-    detail: "Kênh thông báo email và cảnh báo trong ứng dụng đã được làm mới.",
-    time: "12/06/2026, 08:12",
-    type: "system",
-    status: "success",
-    icon: Bell,
-  },
-] as const;
-
-const filterOptions: { label: string; value: ActivityType }[] = [
-  { label: "Tất cả", value: "all" },
-  { label: "Tài khoản", value: "account" },
-  { label: "Bảo mật", value: "security" },
-  { label: "Quy trình", value: "workflow" },
-  { label: "Hệ thống", value: "system" },
+const CATEGORIES: Array<{ label: string; value: LogCategory | "all" }> = [
+  { label: CATEGORY_LABELS["all"], value: "all" },
+  { label: CATEGORY_LABELS["review"], value: "review" },
+  { label: CATEGORY_LABELS["submission"], value: "submission" },
+  { label: CATEGORY_LABELS["progress"], value: "progress" },
+  { label: CATEGORY_LABELS["proposal"], value: "proposal" },
+  { label: CATEGORY_LABELS["account"], value: "account" },
+  { label: CATEGORY_LABELS["system"], value: "system" },
 ];
 
-const statusOptions: { label: string; value: ActivityStatus }[] = [
-  { label: "Mọi trạng thái", value: "all" },
-  { label: "Thành công", value: "success" },
-  { label: "Đang chờ", value: "pending" },
-  { label: "Cần chú ý", value: "warning" },
-];
+const PAGE_SIZE = 20;
 
 function ActivityHistory() {
   const { user } = useAuth();
-  const [activeType, setActiveType] = useState<ActivityType>("all");
-  const [activeStatus, setActiveStatus] = useState<ActivityStatus>("all");
+
+  const [activeCategory, setActiveCategory] = useState<LogCategory | "all">(
+    "all",
+  );
+  const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
 
-  const filteredActivities = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+  const { data, loading, error, refresh } = useActivityLogs({
+    category: activeCategory,
+    page,
+    size: PAGE_SIZE,
+  });
 
-    return activities.filter((activity) => {
-      const matchType = activeType === "all" || activity.type === activeType;
-      const matchStatus =
-        activeStatus === "all" || activity.status === activeStatus;
-      const matchKeyword =
-        !keyword ||
-        activity.title.toLowerCase().includes(keyword) ||
-        activity.detail.toLowerCase().includes(keyword);
+  const filteredItems = useMemo(() => {
+    if (!data) return [];
+    const kw = search.trim().toLowerCase();
+    if (!kw) return data.content;
+    return data.content.filter(
+      (log) =>
+        log.detail.toLowerCase().includes(kw) ||
+        getActionLabel(log.actionType).toLowerCase().includes(kw),
+    );
+  }, [data, search]);
 
-      return matchType && matchStatus && matchKeyword;
-    });
-  }, [activeStatus, activeType, search]);
+  const totalElements = data?.totalElements ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
-  const successCount = activities.filter(
-    (activity) => activity.status === "success",
-  ).length;
-  const attentionCount = activities.length - successCount;
+  const reviewCount =
+    data?.content.filter((l) => l.category === "review").length ?? 0;
+  const submitCount =
+    data?.content.filter((l) => l.category === "submission").length ?? 0;
+
+  function handleCategoryChange(cat: LogCategory | "all") {
+    setActiveCategory(cat);
+    setPage(0);
+    setSearch("");
+  }
 
   return (
     <main className="activity-page">
@@ -141,64 +87,65 @@ function ActivityHistory() {
           <span className="activity-kicker">Lịch sử hoạt động</span>
           <h1>Theo dõi các thao tác gần đây</h1>
           <p>
-            Nhật ký thao tác của {user?.fullName || "người dùng"} trong hệ
-            thống Manga Kousei, bao gồm hồ sơ, bảo mật, thông báo và quy trình
-            làm việc.
+            Nhật ký thao tác của{" "}
+            <strong>{user?.fullName || "người dùng"}</strong> trong hệ thống
+            Manga Kousei — bao gồm duyệt bài, nộp bài, tiến độ và tài khoản.
           </p>
         </div>
-
         <div className="activity-user-card">
-          <span>{roleLabels[user?.role || ""] || user?.role || "Tài khoản"}</span>
-          <strong>{user?.email || "user@mangakousei.local"}</strong>
+          <span>
+            {roleLabels[user?.role ?? ""] || user?.role || "Tài khoản"}
+          </span>
+          <strong>{user?.email || "—"}</strong>
         </div>
       </section>
 
-      <section className="activity-summary" aria-label="Tổng quan lịch sử">
+      <section className="activity-summary" aria-label="Tổng quan">
         <article>
           <History size={20} />
           <div>
-            <strong>{activities.length}</strong>
+            <strong>{totalElements}</strong>
             <span>Tổng hoạt động</span>
           </div>
         </article>
         <article>
           <CheckCircle2 size={20} />
           <div>
-            <strong>{successCount}</strong>
-            <span>Thành công</span>
+            <strong>{reviewCount}</strong>
+            <span>Đánh giá / duyệt</span>
           </div>
         </article>
         <article>
-          <ShieldCheck size={20} />
+          <Clock3 size={20} />
           <div>
-            <strong>{attentionCount}</strong>
-            <span>Cần theo dõi</span>
+            <strong>{submitCount}</strong>
+            <span>Nộp bài</span>
           </div>
         </article>
       </section>
 
       <section className="activity-toolbar">
-        <div className="activity-search">
+        <label className="activity-search">
           <Search size={18} />
           <input
             type="search"
             placeholder="Tìm theo nội dung hoạt động..."
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
+        </label>
 
         <label className="activity-select">
           <Filter size={17} />
           <select
-            value={activeStatus}
-            onChange={(event) =>
-              setActiveStatus(event.target.value as ActivityStatus)
+            value={activeCategory}
+            onChange={(e) =>
+              handleCategoryChange(e.target.value as LogCategory | "all")
             }
           >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </select>
@@ -209,14 +156,14 @@ function ActivityHistory() {
         <aside className="activity-filter-panel" aria-label="Lọc hoạt động">
           <span className="activity-kicker">Nhóm hoạt động</span>
           <div className="activity-filter-list">
-            {filterOptions.map((option) => (
+            {CATEGORIES.map((c) => (
               <button
-                className={activeType === option.value ? "active" : ""}
-                key={option.value}
+                key={c.value}
                 type="button"
-                onClick={() => setActiveType(option.value)}
+                className={activeCategory === c.value ? "active" : ""}
+                onClick={() => handleCategoryChange(c.value)}
               >
-                {option.label}
+                {c.label}
               </button>
             ))}
           </div>
@@ -226,34 +173,106 @@ function ActivityHistory() {
           <div className="activity-panel__header">
             <div>
               <span className="activity-kicker">Timeline</span>
-              <h2>{filteredActivities.length} hoạt động được tìm thấy</h2>
+              <h2>
+                {loading
+                  ? "Đang tải…"
+                  : `${filteredItems.length} hoạt động được tìm thấy`}
+              </h2>
             </div>
-            <Clock3 size={19} />
+            <button
+              className="activity-refresh"
+              type="button"
+              onClick={refresh}
+              title="Làm mới"
+            >
+              <RefreshCw size={16} />
+            </button>
           </div>
 
-          <div className="activity-timeline">
-            {filteredActivities.map((activity) => {
-              const Icon = activity.icon;
+          {error && (
+            <div className="activity-error">
+              <AlertCircle size={18} />
+              <span>{error}</span>
+              <button type="button" onClick={refresh}>
+                Thử lại
+              </button>
+            </div>
+          )}
 
-              return (
+          {loading && !error && (
+            <div className="activity-timeline">
+              {Array.from({ length: 5 }).map((_, i) => (
                 <div
-                  className={`activity-item activity-item--${activity.status}`}
-                  key={activity.id}
-                >
-                  <span className="activity-item__icon">
-                    <Icon size={18} />
-                  </span>
-                  <div className="activity-item__body">
-                    <div>
-                      <strong>{activity.title}</strong>
-                      <time>{activity.time}</time>
+                  className="activity-item activity-item--skeleton"
+                  key={i}
+                  aria-hidden
+                />
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && filteredItems.length === 0 && (
+            <div className="activity-empty">
+              <History size={32} />
+              <p>Chưa có hoạt động nào trong nhóm này.</p>
+            </div>
+          )}
+
+          {!loading && !error && filteredItems.length > 0 && (
+            <div className="activity-timeline">
+              {filteredItems.map((log) => {
+                const Icon = getActionIcon(log.actionType);
+                const label = getActionLabel(log.actionType);
+                const variant = getCategoryVariant(log.category);
+
+                return (
+                  <div
+                    key={log.logId}
+                    className={`activity-item activity-item--${variant}`}
+                  >
+                    <span className="activity-item__icon" aria-hidden>
+                      <Icon size={18} />
+                    </span>
+                    <div className="activity-item__body">
+                      <div>
+                        <strong>{label}</strong>
+                        <time dateTime={log.createdAt}>{log.createdAt}</time>
+                      </div>
+                      <p>{log.detail}</p>
                     </div>
-                    <p>{activity.detail}</p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && totalPages > 1 && (
+            <div className="activity-pagination">
+              <button
+                type="button"
+                className="activity-pagination__btn"
+                disabled={page === 0}
+                onClick={() => setPage((p) => p - 1)}
+                aria-label="Trang trước"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <span className="activity-pagination__info">
+                Trang {page + 1} / {totalPages}
+              </span>
+
+              <button
+                type="button"
+                className="activity-pagination__btn"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage((p) => p + 1)}
+                aria-label="Trang sau"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </article>
       </section>
     </main>

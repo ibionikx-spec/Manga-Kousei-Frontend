@@ -6,9 +6,6 @@ import {
   RefreshCw,
   InboxIcon,
   Eye,
-  Activity,
-  CheckCircle,
-  Circle,
   CalendarDays,
   Loader2,
 } from "lucide-react";
@@ -16,6 +13,7 @@ import "./TantouDashboard.scss";
 import { fetchInbox } from "../../services/tantouService";
 
 import type { InboxItem } from "../../services/tantouService";
+import RecentActivityWidget from "../../components/activityLog/RecentActivityWidget";
 
 const DEADLINES = [
   {
@@ -44,27 +42,6 @@ const DEADLINES = [
     title: "Tone - Chương 28",
     author: "Inoue",
     series: "Kiếm Khách Đêm",
-  },
-];
-
-const ACTIVITIES = [
-  {
-    id: 1,
-    done: true,
-    title: "Series A: Storyboard hoàn thành",
-    meta: "Bởi Mangaka X · 2 giờ trước",
-  },
-  {
-    id: 2,
-    done: false,
-    title: "Series B: Đang chờ đánh giá",
-    meta: "Genga Ch. 3 · 5 giờ trước",
-  },
-  {
-    id: 3,
-    done: false,
-    title: "Thợ Săn Mực: Yêu cầu sửa đổi",
-    meta: "Tantou Y gửi phản hồi · 1 ngày trước",
   },
 ];
 
@@ -170,35 +147,7 @@ export default function TantouDashboard() {
           </div>
 
           <div className="td-card td-activity">
-            <div className="td-card__head">
-              <div className="td-card__title">
-                <Activity size={15} strokeWidth={2} />
-                Hoạt động Gần đây
-              </div>
-            </div>
-
-            <ul className="td-activity__list">
-              {ACTIVITIES.map((a, i) => (
-                <li key={a.id} className="td-activity__item">
-                  <div
-                    className={`td-activity__dot ${a.done ? "td-activity__dot--done" : ""}`}
-                  >
-                    {a.done ? (
-                      <CheckCircle size={18} strokeWidth={2} />
-                    ) : (
-                      <Circle size={18} strokeWidth={1.5} />
-                    )}
-                    {i < ACTIVITIES.length - 1 && (
-                      <span className="td-activity__line" />
-                    )}
-                  </div>
-                  <div className="td-activity__body">
-                    <p className="td-activity__title">{a.title}</p>
-                    <p className="td-activity__meta">{a.meta}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <RecentActivityWidget />
           </div>
         </div>
 

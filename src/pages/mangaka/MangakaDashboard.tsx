@@ -6,42 +6,11 @@ import {
   MoreHorizontal,
   TrendingUp,
   Minus,
-  MessageSquare,
-  Banknote,
-  Filter,
 } from "lucide-react";
 import "./MangakaDashboard.scss";
+import RecentActivityWidget from "../../components/activityLog/RecentActivityWidget";
 
 export default function MangakaDashboard() {
-  const activities = [
-    {
-      id: 1,
-      user: "Trợ lý Minh Long",
-      action: "đã nộp",
-      target: "Background",
-      time: "10 phút trước",
-      avatar:
-        "https://ui-avatars.com/api/?name=Long&background=1e293b&color=fff",
-      icon: null,
-    },
-    {
-      id: 2,
-      user: "BTV Ken",
-      action: "đã comment bản Name",
-      target: "Neon Ramen - Ch. 10",
-      quote: '"Cần xem lại nhịp độ đoạn rượt đuổi..."',
-      time: "1 giờ trước",
-      icon: <MessageSquare size={16} />,
-    },
-    {
-      id: 3,
-      system: true,
-      action: "Hệ thống đã xử lý thanh toán thù lao tháng trước cho Studio.",
-      time: "Hôm qua",
-      icon: <Banknote size={16} />,
-    },
-  ];
-
   return (
     <div className="mangaka-dashboard">
       <div className="dashboard-hero">
@@ -227,47 +196,7 @@ export default function MangakaDashboard() {
           </div>
         </div>
 
-        <div className="activity-feed">
-          <div className="feed-header">
-            <div className="title-group">
-              <div className="dot-green"></div>
-              <h3>Luồng Hoạt Động</h3>
-            </div>
-            <Filter className="icon-filter" size={18} />
-          </div>
-
-          <div className="timeline">
-            {activities.map((act) => (
-              <div className="timeline-item" key={act.id}>
-                <div className="timeline-icon">
-                  {act.avatar ? (
-                    <img
-                      src={act.avatar}
-                      alt="Avatar"
-                      className="user-avatar"
-                    />
-                  ) : (
-                    <div className="sys-icon">{act.icon}</div>
-                  )}
-                </div>
-                <div className="timeline-content">
-                  <p className="action-text">
-                    {act.system ? (
-                      <span>{act.action}</span>
-                    ) : (
-                      <>
-                        <strong>{act.user}</strong> {act.action}{" "}
-                        <span className="target-link">{act.target}</span>
-                      </>
-                    )}
-                  </p>
-                  {act.quote && <div className="quote-box">{act.quote}</div>}
-                  <span className="time">{act.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <RecentActivityWidget />
       </div>
     </div>
   );
