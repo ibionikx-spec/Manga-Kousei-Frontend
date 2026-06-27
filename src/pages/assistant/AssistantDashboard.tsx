@@ -50,8 +50,6 @@ interface Resource {
   label: string;
 }
 
-// ─── Data Mocking ─────────────────────────────────────────────────────────────
-
 const notifications: Notification[] = [
   {
     icon: "edit",
@@ -131,7 +129,6 @@ const resources: Resource[] = [
   { icon: "brush", label: "Custom Brushes" },
 ];
 
-// Helper Render Icons bảo trì tập trung
 const renderNotifIcon = (type: Notification["icon"]) => {
   switch (type) {
     case "edit":
@@ -155,8 +152,6 @@ const renderResourceIcon = (type: Resource["icon"]) => {
       return null;
   }
 };
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 const DeadlineAlert: React.FC = () => (
   <div className={styles.deadlineAlert}>
@@ -351,8 +346,6 @@ const IncomeCard: React.FC = () => (
     <div className={styles.incomeGoal}>Mục tiêu: ¥75,000</div>
   </div>
 );
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 const MangakaDashboard: React.FC = () => {
   return (

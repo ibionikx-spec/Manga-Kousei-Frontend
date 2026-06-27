@@ -10,72 +10,45 @@ import {
   Loader2,
 } from "lucide-react";
 import "./TantouDashboard.scss";
-import { fetchInbox } from "../../services/tantouService";
-
-import type { InboxItem } from "../../services/tantouService";
+import {
+  fetchInbox,
+  fetchDashboardDeadlines,
+} from "../../services/tantouService";
+import type {
+  InboxItem,
+  DashboardDeadlineItem,
+} from "../../services/tantouService";
 import RecentActivityWidget from "../../components/activityLog/RecentActivityWidget";
 
-const DEADLINES = [
-  {
-    id: 1,
-    label: "QUÁ HẠN",
-    labelType: "overdue",
-    timeTag: "Hôm qua",
-    title: "Bản Name - Chương 42",
-    author: "Yamamoto",
-    series: "Thợ Săn Mực",
-  },
-  {
-    id: 2,
-    label: "ĐẾN HẠN",
-    labelType: "due",
-    timeTag: "Hôm nay 18:00",
-    title: "Genga - Chương 15",
-    author: "Sato",
-    series: "Thành phố Cát",
-  },
-  {
-    id: 3,
-    label: "SẮP ĐẾN",
-    labelType: "soon",
-    timeTag: "Ngày mai",
-    title: "Tone - Chương 28",
-    author: "Inoue",
-    series: "Kiếm Khách Đêm",
-  },
-];
-
-const PROGRESS = [
-  { label: "Bản Name", pct: 80, color: "#1d4ed8" },
-  { label: "Genga", pct: 45, color: "#1d4ed8" },
-  { label: "Hoàn thiện & Typeset", pct: 20, color: "#1d4ed8" },
-];
-
 export default function TantouDashboard() {
-  const [month] = useState("Tháng 10, 2023");
   const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [deadlines, setDeadlines] = useState<DashboardDeadlineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [inboxRes] = await Promise.all([fetchInbox()]);
+  const now = new Date();
+  const month = now.toLocaleDateString("vi-VN", {
+    month: "long",
+    year: "numeric",
+  });
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const [inboxRes, deadlineRes] = await Promise.all([
+          fetchInbox(),
+          fetchDashboardDeadlines(),
+        ]);
         setInbox(inboxRes);
+        setDeadlines(deadlineRes);
       } catch (err) {
         setError("Không thể tải dữ liệu. Vui lòng thử lại.");
         console.error(err);
       } finally {
         setLoading(false);
       }
-    };
-    loadData();
+    })();
   }, []);
-
-  useEffect(() => {
-    console.log(inbox);
-  }, [inbox]);
 
   const pendingCount = inbox.filter((i) => i.status === "pending").length;
 
@@ -119,25 +92,31 @@ export default function TantouDashboard() {
             </div>
 
             <div className="td-deadline__list">
-              {DEADLINES.map((d) => (
-                <div
-                  key={d.id}
-                  className={`td-dl-item td-dl-item--${d.labelType}`}
-                >
-                  <div className="td-dl-item__top">
-                    <span className="td-dl-item__badge">{d.label}</span>
-                    <span className="td-dl-item__time">
-                      <Clock size={11} strokeWidth={2} />
-                      {d.timeTag}
-                    </span>
+              {deadlines.length === 0 ? (
+                <p className="td-deadline__empty">
+                  Không có deadline cần chú ý.
+                </p>
+              ) : (
+                deadlines.map((d) => (
+                  <div
+                    key={d.deadlineId}
+                    className={`td-dl-item td-dl-item--${d.labelType}`}
+                  >
+                    <div className="td-dl-item__top">
+                      <span className="td-dl-item__badge">{d.label}</span>
+                      <span className="td-dl-item__time">
+                        <Clock size={11} strokeWidth={2} />
+                        {d.timeTag}
+                      </span>
+                    </div>
+                    <p className="td-dl-item__title">{d.title}</p>
+                    <p className="td-dl-item__meta">
+                      Tác giả: {d.author} &nbsp;·&nbsp; Series:{" "}
+                      <em>{d.series}</em>
+                    </p>
                   </div>
-                  <p className="td-dl-item__title">{d.title}</p>
-                  <p className="td-dl-item__meta">
-                    Tác giả: {d.author} &nbsp;·&nbsp; Series:{" "}
-                    <em>{d.series}</em>
-                  </p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             <button className="td-deadline__cta">
@@ -171,70 +150,103 @@ export default function TantouDashboard() {
                 <span>HÀNH ĐỘNG</span>
               </div>
 
-              {inbox.map((item) => (
-                <div
-                  key={`${item.itemType}-${item.id}`}
-                  className="td-inbox__row"
-                >
-                  <div className="td-inbox__series">
-                    <span className="td-inbox__series-name">
-                      {item.seriesTitle || "—"}
+              {inbox.length === 0 ? (
+                <p className="td-inbox__empty">
+                  Không có mục nào trong hộp thư.
+                </p>
+              ) : (
+                inbox.map((item) => (
+                  <div
+                    key={`${item.itemType}-${item.id}`}
+                    className="td-inbox__row"
+                  >
+                    <div className="td-inbox__series">
+                      <span className="td-inbox__series-name">
+                        {item.seriesTitle || "—"}
+                      </span>
+                      <span className="td-inbox__submitted">
+                        Gửi bởi: {item.submittedBy}
+                      </span>
+                    </div>
+                    <span className="td-inbox__content">{item.content}</span>
+                    <span
+                      className={`td-inbox__status td-inbox__status--${item.status}`}
+                    >
+                      {item.statusLabel}
                     </span>
-                    <span className="td-inbox__submitted">
-                      Gửi bởi: {item.submittedBy}
-                    </span>
+                    <button
+                      className={`td-inbox__action ${item.status === "approved" ? "td-inbox__action--text" : ""}`}
+                      onClick={() => {
+                        if (item.itemType === "manuscript") {
+                          window.location.href = `/approvals/manuscript/${item.id}`;
+                        } else if (item.itemType === "proposal") {
+                          window.location.href = `proposal-review/${item.id}`;
+                        }
+                      }}
+                    >
+                      {item.status === "approved" ? (
+                        "Chi tiết"
+                      ) : (
+                        <>
+                          <Eye size={13} strokeWidth={2} /> Xem
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <span className="td-inbox__content">{item.content}</span>
-                  <span
-                    className={`td-inbox__status td-inbox__status--${item.status}`}
-                  >
-                    {item.statusLabel}
-                  </span>
-                  <button
-                    className={`td-inbox__action ${item.status === "approved" ? "td-inbox__action--text" : ""}`}
-                    onClick={() => {
-                      if (item.itemType === "manuscript") {
-                        window.location.href = `/approvals/manuscript/${item.id}`;
-                      } else if (item.itemType === "proposal") {
-                        window.location.href = `proposal-review/${item.id}`;
-                      }
-                    }}
-                  >
-                    {item.status === "approved" ? (
-                      "Chi tiết"
-                    ) : (
-                      <>
-                        <Eye size={13} strokeWidth={2} /> Xem
-                      </>
-                    )}
-                  </button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           <div className="td-card td-progress">
             <div className="td-card__head">
-              <div className="td-card__title">Tiến độ Phát hành Tháng</div>
-              <button className="td-progress__refresh" title="Làm mới">
+              <div className="td-card__title">Tình trạng Deadline Tháng</div>
+              <button
+                className="td-progress__refresh"
+                title="Làm mới"
+                onClick={() => window.location.reload()}
+              >
                 <RefreshCw size={14} strokeWidth={2} />
               </button>
             </div>
             <p className="td-progress__sub">
-              Tổng quan các đầu truyện đang chạy.
+              Tổng hợp deadline theo tình trạng.
             </p>
 
             <div className="td-progress__list">
-              {PROGRESS.map((p) => (
+              {[
+                {
+                  label: "Quá hạn",
+                  count: deadlines.filter((d) => d.labelType === "overdue")
+                    .length,
+                  color: "#dc2626",
+                },
+                {
+                  label: "Đến hạn hôm nay",
+                  count: deadlines.filter((d) => d.labelType === "due").length,
+                  color: "#f59e0b",
+                },
+                {
+                  label: "Sắp đến (3 ngày)",
+                  count: deadlines.filter((d) => d.labelType === "soon").length,
+                  color: "#1d4ed8",
+                },
+              ].map((p) => (
                 <div key={p.label} className="td-progress__item">
                   <div className="td-progress__item-top">
                     <span className="td-progress__label">{p.label}</span>
-                    <span className="td-progress__pct">{p.pct}%</span>
+                    <span className="td-progress__pct">{p.count} deadline</span>
                   </div>
                   <div className="td-progress__track">
                     <div
                       className="td-progress__fill"
-                      style={{ width: `${p.pct}%`, backgroundColor: p.color }}
+                      style={{
+                        width:
+                          deadlines.length > 0
+                            ? `${Math.round((p.count / deadlines.length) * 100)}%`
+                            : "0%",
+                        backgroundColor: p.color,
+                      }}
                     />
                   </div>
                 </div>

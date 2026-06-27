@@ -50,17 +50,6 @@ export const fetchInbox = () =>
     })
     .catch(() => []);
 
-// export const fetchDeadlines = () =>
-//   api.get<DeadlineItem[]>("/tantou/deadlines").then((res) => res.data);
-
-// export const fetchActivities = () =>
-//   api.get<ActivityItem[]>("/tantou/activities").then((res) => res.data);
-
-// export const fetchProgress = () =>
-//   api.get<ProgressItem[]>("/tantou/progress").then((res) => res.data);
-
-// type ProposalStatus = "pending" | "approved" | "revision" | "rejected";
-
 export const fetchProposals = async (
   status?: string,
   search?: string,
@@ -135,3 +124,20 @@ export const reviewProposal = (
 
 export const reopenProposal = (id: number) =>
   api.patch(`/tantou/proposals/${id}/reopen`);
+
+export interface DashboardDeadlineItem {
+  deadlineId: number;
+  labelType: "overdue" | "due" | "soon";
+  label: string;
+  timeTag: string;
+  title: string;
+  author: string;
+  series: string;
+  dueDate: string;
+}
+
+export const fetchDashboardDeadlines = (): Promise<DashboardDeadlineItem[]> =>
+  api
+    .get<ApiResponse<DashboardDeadlineItem[]>>("/tantou/dashboard/deadlines")
+    .then((res) => res.data.data ?? [])
+    .catch(() => []);
