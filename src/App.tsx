@@ -4,11 +4,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import { ProtectedRoute } from "./components/routes/ProtectedRoute";
 import { PublicRoute } from "./components/routes/PublicRoute";
 import { MainLayout } from "./components/layouts/MainLayout";
-import AdminSurvival from "./pages/admin/AdminSurvival";
 import TantouDashboard from "./pages/tantou/TantouDashboard";
 import { DashboardRedirect } from "./pages/redirect/DashboardRedirect";
 import AdminApprovalsPage from "./pages/admin/AdminApprovals";
-import AdminMagazines from "./pages/admin/AdminMagazines";
 import AdminContracts from "./pages/admin/AdminContracts";
 import { Unauthorized } from "./pages/others/Unauthorized";
 import { NotFound } from "./pages/others/NotFound";
@@ -38,6 +36,7 @@ import TantouSeriesChapters from "./pages/tantou/TantouSeriesChapters/TantouSeri
 import AssistantInvitations from "./pages/assistant/AssistantInvitations/AssistantInvitations.tsx";
 import MangakaPageEditor from "./pages/mangaka/MangakaPageEditor/MangakaPageEditor.tsx";
 import AssistantTasks from "./pages/assistant/AssistantTasks/AssistantTasks.tsx";
+import AdminPersonnel from "./pages/admin/AdminPersonnel.tsx";
 
 function App() {
   return (
@@ -67,8 +66,6 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
-            <Route path="survival" element={<AdminSurvival />} />
-            <Route path="magazines" element={<AdminMagazines />} />
             <Route path="contracts" element={<AdminContracts />} />
             <Route path="proposal-review" element={<AdminProposalReview />} />
             <Route
@@ -79,6 +76,7 @@ function App() {
               path="schedule-assignment/:proposalId"
               element={<ScheduleAssignment />}
             />
+            <Route path="personnel" element={<AdminPersonnel />} />
           </Route>
         </Route>
         <Route element={<ProtectedRoute allowedRoles={["TANTOU"]} />}>

@@ -1,218 +1,315 @@
+import { useState, useEffect } from "react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  Loader2,
+  BookOpen,
+  Users,
+  FileText,
+  CheckCircle2,
+  Clock,
+  ChevronRight,
+  ArrowUp,
+  Minus,
+  ArrowDown,
+  Star,
+  Sparkles,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import RecentActivityWidget from "../../components/activityLog/RecentActivityWidget";
+import api from "../../services/api";
 import "./AdminDashboard.scss";
 
-type TopSeries = {
-  rank: string;
+interface AdminStats {
+  totalSeries: number;
+  totalMangaka: number;
+  totalTantou: number;
+  totalAssistant: number;
+  pendingAdminProposals: number;
+  approvedProposals: number;
+  pendingPublishChapters: number;
+  publishedChapters: number;
+}
+
+interface SeriesRank {
+  seriesId: number;
   title: string;
-  genre: string;
-  revenue: string;
-  growth: string;
-  cover: "aqua" | "sunset" | "noir";
-};
+  mangakaName: string | null;
+  latestChapter: number | null;
+  voteCount: number;
+  rating: number;
+  chapterCount: number;
+}
 
-type DangerItem = {
-  title: string;
-  issue: string;
-  action: string;
-  tone: "critical" | "warning" | "soft";
-};
+interface ApiResp<T> {
+  data: T;
+}
 
-const cashFlow = [
-  { quarter: "Q1 2023", income: "high", expense: "mid" },
-  { quarter: "Q2 2023", income: "mid", expense: "soft" },
-  { quarter: "Q3 2023", income: "peak", expense: "low" },
-  { quarter: "Q4 (EST)", income: "est", expense: "est-low" },
-];
-
-const decisions = [
-  {
-    date: "15 OCT, 2023",
-    text: "Phê duyệt chuyển thể Anime cho series Hành Trình Vô Tận - Ngân sách: 12 Tỷ ¥.",
-  },
-  {
-    date: "12 OCT, 2023",
-    text: "Ngừng phát hành (Axed) series Bóng Ma Trường Học do lượt đọc giảm 40% trong 4 tuần.",
-  },
-  {
-    date: "10 OCT, 2023",
-    text: "Ký kết tác giả mới Golden Rookie - Hợp đồng độc quyền 3 năm.",
-  },
-];
-
-const topSeries: TopSeries[] = [
-  {
-    rank: "01",
-    title: "HÀNH TRÌNH VÔ TẬN",
-    genre: "FANTASY",
-    revenue: "12.5 Tỷ ¥",
-    growth: "+25%",
-    cover: "aqua",
-  },
-  {
-    rank: "02",
-    title: "GIAI ĐIỆU MÙA HẠ",
-    genre: "ROMANCE",
-    revenue: "8.9 Tỷ ¥",
-    growth: "+18%",
-    cover: "sunset",
-  },
-  {
-    rank: "03",
-    title: "THÀNH PHỐ TỘI LỖI",
-    genre: "DETECTIVE",
-    revenue: "7.4 Tỷ ¥",
-    growth: "+5%",
-    cover: "noir",
-  },
-];
-
-const dangerItems: DangerItem[] = [
-  {
-    title: "CHIẾN BINH RỒNG",
-    issue: "Lượt đọc: -45% trong 3 tháng qua",
-    action: "XÉT DUYỆT AXE",
-    tone: "critical",
-  },
-  {
-    title: "BÍ ẨN KIM TỰ THÁP",
-    issue: "Trễ deadline nộp bản thảo 12 ngày",
-    action: "CẢNH CÁO TÁC GIẢ",
-    tone: "warning",
-  },
-  {
-    title: "SIÊU NĂNG LỰC",
-    issue: "Rating trung bình: 1.5/5 (N=2,400)",
-    action: "ĐỔI CHIẾN LƯỢC",
-    tone: "soft",
-  },
-];
+const fetchStats = (): Promise<AdminStats> =>
+  api
+    .get<ApiResp<AdminStats>>("/admin/dashboard/stats")
+    .then((r) => r.data.data);
+const fetchTopSeries = (): Promise<SeriesRank[]> =>
+  api
+    .get<ApiResp<SeriesRank[]>>("/admin/dashboard/top-series")
+    .then((r) => r.data.data ?? []);
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [ranking, setRanking] = useState<SeriesRank[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const now = new Date();
+  const month = now.toLocaleDateString("vi-VN", {
+    month: "long",
+    year: "numeric",
+  });
+
+  useEffect(() => {
+    Promise.all([fetchStats(), fetchTopSeries()])
+      .then(([s, r]) => {
+        setStats(s);
+        setRanking(r);
+      })
+      .catch(() => setError("Không thể tải dữ liệu. Vui lòng thử lại."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading)
+    return (
+      <div className="ad-page ad-page--center">
+        <Loader2 size={22} className="ad-spin" />
+        Đang tải dữ liệu...
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="ad-page ad-page--center ad-page--error">
+        <AlertTriangle size={18} />
+        {error}
+      </div>
+    );
+
+  const statCards = [
+    {
+      label: "Series đang hoạt động",
+      value: stats?.totalSeries ?? 0,
+      icon: BookOpen,
+      tone: "blue",
+      sub: `${stats?.publishedChapters ?? 0} chương đã đăng`,
+    },
+    {
+      label: "Tổng Mangaka",
+      value: stats?.totalMangaka ?? 0,
+      icon: Users,
+      tone: "indigo",
+      sub: `${stats?.totalTantou ?? 0} Tantou · ${stats?.totalAssistant ?? 0} Assistant`,
+    },
+    {
+      label: "Proposal chờ duyệt",
+      value: stats?.pendingAdminProposals ?? 0,
+      icon: Sparkles,
+      tone: (stats?.pendingAdminProposals ?? 0) > 0 ? "orange" : "green",
+      sub: `${stats?.approvedProposals ?? 0} đã được duyệt`,
+      action: () => navigate("/admin/proposal-review"),
+    },
+    {
+      label: "Chương chờ đăng",
+      value: stats?.pendingPublishChapters ?? 0,
+      icon: FileText,
+      tone: (stats?.pendingPublishChapters ?? 0) > 0 ? "red" : "green",
+      sub: `${stats?.publishedChapters ?? 0} đã phát hành`,
+      action: () => navigate("/admin/approvals"),
+    },
+  ];
+
   return (
-    <main className="admin-dashboard">
-      <section className="admin-dashboard__content">
-          <div className="dashboard-header">
-            <div>
-              <h1>TỔNG QUAN TÒA SOẠN</h1>
-              <p>Giám sát hiệu suất kinh doanh và quản trị nội dung tòa soạn.</p>
+    <div className="ad-page">
+      <div className="ad-header">
+        <div className="ad-header__left">
+          <h1>Tổng quan Tòa soạn</h1>
+          <p>Giám sát tiến độ sản xuất và xét duyệt nội dung.</p>
+        </div>
+        <div className="ad-header__badge">
+          <CalendarDays size={14} strokeWidth={2} />
+          {month}
+        </div>
+      </div>
+
+      <div className="ad-stats">
+        {statCards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div
+              key={c.label}
+              className={`ad-stat ad-stat--${c.tone} ${c.action ? "ad-stat--clickable" : ""}`}
+              onClick={c.action}
+            >
+              <div className="ad-stat__top">
+                <span className="ad-stat__label">{c.label}</span>
+                <div className="ad-stat__icon">
+                  <Icon size={17} strokeWidth={2} />
+                </div>
+              </div>
+              <div className="ad-stat__value">{c.value}</div>
+              <div className="ad-stat__sub">{c.sub}</div>
+              {c.action && (
+                <div className="ad-stat__link">
+                  Xem chi tiết <ChevronRight size={12} />
+                </div>
+              )}
             </div>
-            <div className="dashboard-header__actions">
-              <button className="action-button action-button--primary" type="button">
-                XUẤT BÁO CÁO
-              </button>
-              <button className="action-button action-button--outline" type="button">
-                QUẢN LÝ DÒNG TIỀN
-              </button>
+          );
+        })}
+      </div>
+
+      <div className="ad-grid">
+        <div className="ad-col ad-col--left">
+          <div className="ad-card ad-pending">
+            <div className="ad-pending__header">
+              <AlertTriangle size={17} strokeWidth={2.5} />
+              <span>Cần xử lý ngay</span>
+            </div>
+            <div className="ad-pending__list">
+              {(stats?.pendingAdminProposals ?? 0) > 0 && (
+                <button
+                  className="ad-pending__item ad-pending__item--orange"
+                  onClick={() => navigate("/admin/proposal-review")}
+                >
+                  <span className="ad-pending__item-dot" />
+                  <div>
+                    <strong>{stats!.pendingAdminProposals} proposal</strong>
+                    <span>đang chờ Admin xét duyệt</span>
+                  </div>
+                  <ChevronRight size={14} />
+                </button>
+              )}
+              {(stats?.pendingPublishChapters ?? 0) > 0 && (
+                <button
+                  className="ad-pending__item ad-pending__item--blue"
+                  onClick={() => navigate("/admin/approvals")}
+                >
+                  <span className="ad-pending__item-dot" />
+                  <div>
+                    <strong>{stats!.pendingPublishChapters} chapter</strong>
+                    <span>đang chờ Admin duyệt đăng</span>
+                  </div>
+                  <ChevronRight size={14} />
+                </button>
+              )}
+              {(stats?.pendingAdminProposals ?? 0) === 0 &&
+                (stats?.pendingPublishChapters ?? 0) === 0 && (
+                  <div className="ad-pending__empty">
+                    <CheckCircle2 size={20} />
+                    <span>Không có mục nào cần xử lý!</span>
+                  </div>
+                )}
             </div>
           </div>
 
-          <section className="stats-grid" aria-label="Chỉ số tòa soạn">
-            <article className="stat-card stat-card--revenue">
-              <div className="stat-card__badge">+12.4%</div>
-              <h2>TỔNG DOANH THU (LŨY KẾ NĂM)</h2>
-              <strong>84.49</strong>
-              <p>Tỷ ¥ • Kết thúc Tháng 10/2023</p>
-              <div className="revenue-lines">
-                <span>SÁCH IN</span>
-                <span>DIGITAL</span>
-                <span>BẢN QUYỀN</span>
-              </div>
-            </article>
+          <div className="ad-card ad-activity">
+            <RecentActivityWidget />
+          </div>
+        </div>
 
-            <article className="stat-card stat-card--market">
-              <h2>THỊ PHẦN & VỊ THẾ</h2>
-              <div className="market-value">
-                <strong>#2</strong>
-                <span>TOP 5 NXB</span>
+        <div className="ad-col ad-col--right">
+          <div className="ad-card ad-ranking">
+            <div className="ad-card__head">
+              <div className="ad-card__title">
+                <Star size={15} strokeWidth={2} />
+                Bảng xếp hạng Series (theo vote)
               </div>
-              <p>
-                "Vượt mục tiêu quý 5.2%. Hiện đang thu hẹp khoảng cách với
-                Shueisha VN."
-              </p>
-            </article>
-
-            <article className="stat-card stat-card--budget">
-              <h2>NGÂN SÁCH DỰ PHÒNG (Q4)</h2>
-              <div className="progress-ring">
-                <strong>70%</strong>
-                <span>CÒN LẠI</span>
-              </div>
-              <strong className="budget-value">21.5 Tỷ ¥</strong>
-              <p>SẮP GIẢI NGÂN TIỀN BẢN QUYỀN THÁNG 11</p>
-            </article>
-          </section>
-
-          <section className="middle-grid">
-            <article className="chart-card finance-chart">
-              <div className="chart-card__header">
-                <h2>DÒNG TIỀN THU/CHI (THEO QUÝ)</h2>
-                <div className="finance-chart__legend">
-                  <span className="is-income">THU</span>
-                  <span className="is-expense">CHI</span>
+            </div>
+            <div className="ad-ranking__list">
+              {ranking.length === 0 ? (
+                <div className="ad-ranking__empty">
+                  Chưa có dữ liệu xếp hạng.
                 </div>
-              </div>
-              <div className="finance-chart__plot">
-                {cashFlow.map((item) => (
-                  <div className="finance-chart__group" key={item.quarter}>
-                    <div className="finance-chart__bars">
-                      <span className={`finance-chart__bar income is-${item.income}`} />
-                      <span className={`finance-chart__bar expense is-${item.expense}`} />
+              ) : (
+                ranking.map((r, idx) => (
+                  <div
+                    key={r.seriesId}
+                    className={`ad-rank-item ${idx === 0 ? "ad-rank-item--top" : ""}`}
+                  >
+                    <span className="ad-rank-item__num">#{idx + 1}</span>
+                    <div className="ad-rank-item__body">
+                      <strong>{r.title}</strong>
+                      <span>
+                        {r.mangakaName ?? "—"}
+                        {r.latestChapter != null
+                          ? ` · Ch.${r.latestChapter}`
+                          : ""}
+                        {" · "}
+                        {r.voteCount.toLocaleString()} vote
+                        {r.rating > 0 ? ` · ⭐ ${r.rating.toFixed(1)}` : ""}
+                      </span>
                     </div>
-                    <strong>{item.quarter}</strong>
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <article className="decision-log">
-              <h2>NHẬT KÝ QUYẾT ĐỊNH</h2>
-              <div className="decision-log__items">
-                {decisions.map((decision) => (
-                  <div className="decision-log__item" key={decision.date}>
-                    <span>{decision.date}</span>
-                    <p>{decision.text}</p>
-                  </div>
-                ))}
-              </div>
-              <button type="button">XEM TOÀN BỘ NHẬT KÝ</button>
-            </article>
-          </section>
-
-          <section className="bottom-grid">
-            <article className="ranking-board">
-              <h2>♙ BẢNG PHONG THẦN (TOP 3)</h2>
-              <div className="ranking-board__list">
-                {topSeries.map((series) => (
-                  <div className="ranking-board__row" key={series.rank}>
-                    <strong>{series.rank}</strong>
-                    <span className={`series-cover series-cover--${series.cover}`} />
-                    <div>
-                      <h3>{series.title}</h3>
-                      <p>
-                        {series.genre} • {series.revenue}
-                      </p>
+                    <div
+                      className={`ad-rank-item__trend ad-rank-item__trend--${
+                        idx === 0 ? "up" : idx < 2 ? "flat" : "down"
+                      }`}
+                    >
+                      {idx === 0 ? (
+                        <ArrowUp size={13} />
+                      ) : idx < 2 ? (
+                        <Minus size={13} />
+                      ) : (
+                        <ArrowDown size={13} />
+                      )}
                     </div>
-                    <em>{series.growth}</em>
                   </div>
-                ))}
-              </div>
-            </article>
+                ))
+              )}
+            </div>
+          </div>
 
-            <article className="danger-board">
-              <h2>ⓘ BÁO ĐỘNG ĐỎ (NGUY KỊCH)</h2>
-              <div className="danger-board__list">
-                {dangerItems.map((item) => (
-                  <div className={`danger-board__row danger-board__row--${item.tone}`} key={item.title}>
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>{item.issue}</p>
-                    </div>
-                    <button type="button">{item.action}</button>
-                  </div>
-                ))}
+          <div className="ad-card ad-overview">
+            <div className="ad-card__head">
+              <div className="ad-card__title">
+                <Clock size={15} strokeWidth={2} />
+                Tóm tắt hệ thống
               </div>
-            </article>
-          </section>
-      </section>
-    </main>
+            </div>
+            <div className="ad-overview__list">
+              {[
+                {
+                  label: "Tổng series",
+                  value: stats?.totalSeries ?? 0,
+                  color: "#1d4ed8",
+                },
+                {
+                  label: "Chương đã đăng",
+                  value: stats?.publishedChapters ?? 0,
+                  color: "#16a34a",
+                },
+                {
+                  label: "Chờ Admin duyệt",
+                  value:
+                    (stats?.pendingAdminProposals ?? 0) +
+                    (stats?.pendingPublishChapters ?? 0),
+                  color: "#f59e0b",
+                },
+                {
+                  label: "Tổng nhân sự",
+                  value:
+                    (stats?.totalMangaka ?? 0) +
+                    (stats?.totalTantou ?? 0) +
+                    (stats?.totalAssistant ?? 0),
+                  color: "#6366f1",
+                },
+              ].map((item) => (
+                <div key={item.label} className="ad-overview__row">
+                  <span>{item.label}</span>
+                  <strong style={{ color: item.color }}>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,105 +1,145 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
   Eye,
   Download,
-  ChevronDown,
   Minus,
   ArrowUp,
   ArrowDown,
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  Loader2,
 } from "lucide-react";
 import "./TantouReports.scss";
+import api from "../../services/api";
 
-interface BarDatum {
-  label: string;
-  value: number;
-  highlight?: boolean;
-  tooltip?: string;
-}
-
-interface RankItem {
-  rank: number;
+interface SeriesRankItem {
+  seriesId: number;
   title: string;
-  chapter: string;
-  trend: "up" | "down" | "flat";
-  highlight?: boolean;
+  latestChapter: number | null;
+  latestChapterTitle: string | null;
+  voteCount: number;
+  rating: number;
+  chapterCount: number;
+  mangakaName: string | null;
 }
 
-interface BreakdownItem {
-  label: string;
-  pct: number;
-  color: string;
+interface TantouStatsRes {
+  totalSeries: number;
+  publishedChapters: number;
+  pendingReviewChapters: number;
+  totalDeadlines: number;
+  overdueDeadlines: number;
+  submittedDeadlines: number;
 }
 
-const SALES_DATA: BarDatum[] = [
-  { label: "Tháng 1", value: 48 },
-  { label: "Tháng 2", value: 55 },
-  { label: "Tháng 3", value: 76 },
-  { label: "Tháng 4", value: 62 },
-  {
-    label: "Tháng 5",
-    value: 100,
-    highlight: true,
-    tooltip: "Tháng 5: ¥380M (Phát hành Tập 5)",
-  },
-  { label: "Tháng 6", value: 84 },
-  { label: "Tháng 7", value: 70 },
-];
+interface ApiResponse<T> {
+  data: T;
+  message: string;
+}
 
-const ENGAGEMENT_DATA: BarDatum[] = [
-  { label: "Tháng 1", value: 58 },
-  { label: "Tháng 2", value: 62 },
-  { label: "Tháng 3", value: 70 },
-  { label: "Tháng 4", value: 66 },
-  {
-    label: "Tháng 5",
-    value: 100,
-    highlight: true,
-    tooltip: "Tháng 5: 4.8M lượt xem (Phát hành Tập 5)",
-  },
-  { label: "Tháng 6", value: 92 },
-  { label: "Tháng 7", value: 80 },
-];
+const fetchTantouStats = (): Promise<TantouStatsRes> =>
+  api
+    .get<ApiResponse<TantouStatsRes>>("/tantou/reports/stats")
+    .then((r) => r.data.data);
 
-const TARGET_LINE = 60;
-
-const RANKINGS: RankItem[] = [
-  { rank: 1, title: "Phantom Drive", chapter: "Ch. 142", trend: "flat" },
-  {
-    rank: 2,
-    title: "Soul Resonance",
-    chapter: "Ch. 88",
-    trend: "up",
-    highlight: true,
-  },
-  { rank: 3, title: "Crimson Sky", chapter: "Ch. 21", trend: "down" },
-];
-
-const BREAKDOWN: BreakdownItem[] = [
-  { label: "Đọc trên App", pct: 65, color: "#1d4ed8" },
-  { label: "Đọc trên Web", pct: 25, color: "#6366f1" },
-  { label: "Chia sẻ MXH", pct: 10, color: "#db2777" },
-];
-
-const RANK_OPTIONS = [1, 2, 3, 4];
+const fetchTantouRanking = (): Promise<SeriesRankItem[]> =>
+  api
+    .get<ApiResponse<SeriesRankItem[]>>("/tantou/reports/ranking")
+    .then((r) => r.data.data ?? []);
 
 export default function TantouReports() {
-  const [chartTab, setChartTab] = useState<"sales" | "engagement">("sales");
-  const data = chartTab === "sales" ? SALES_DATA : ENGAGEMENT_DATA;
+  const [stats, setStats] = useState<TantouStatsRes | null>(null);
+  const [ranking, setRanking] = useState<SeriesRankItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([fetchTantouStats(), fetchTantouRanking()])
+      .then(([s, r]) => {
+        setStats(s);
+        setRanking(r);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const onTimePct =
+    stats && stats.totalDeadlines > 0
+      ? Math.round(
+          ((stats.totalDeadlines - stats.overdueDeadlines) /
+            stats.totalDeadlines) *
+            100,
+        )
+      : 0;
+
+  const breakdown = stats
+    ? [
+        {
+          label: "Đã nộp / tổng deadline",
+          pct:
+            stats.totalDeadlines > 0
+              ? Math.round(
+                  (stats.submittedDeadlines / stats.totalDeadlines) * 100,
+                )
+              : 0,
+          color: "#1d4ed8",
+        },
+        {
+          label: "Chương chờ duyệt",
+          pct:
+            stats.publishedChapters + stats.pendingReviewChapters > 0
+              ? Math.round(
+                  (stats.pendingReviewChapters /
+                    (stats.publishedChapters + stats.pendingReviewChapters)) *
+                    100,
+                )
+              : 0,
+          color: "#f59e0b",
+        },
+        {
+          label: "Deadline quá hạn",
+          pct:
+            stats.totalDeadlines > 0
+              ? Math.round(
+                  (stats.overdueDeadlines / stats.totalDeadlines) * 100,
+                )
+              : 0,
+          color: "#dc2626",
+        },
+      ]
+    : [];
+
+  if (loading) {
+    return (
+      <div
+        className="ttr-page"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 300,
+        }}
+      >
+        <Loader2
+          size={24}
+          className="animate-spin"
+          style={{ marginRight: 8 }}
+        />
+        Đang tải báo cáo...
+      </div>
+    );
+  }
 
   return (
     <div className="ttr-page">
       <div className="ttr-header">
         <div className="ttr-header__left">
           <h1>Tổng quan Sức khỏe Tác phẩm</h1>
-          <p>Chỉ số hiệu suất Quý 3/2023 cho các Series hàng đầu</p>
+          <p>Chỉ số sản xuất thực tế cho các Series bạn phụ trách</p>
         </div>
         <div className="ttr-header__right">
-          <button className="ttr-btn ttr-btn--outline">
-            Tất cả Series
-            <ChevronDown size={14} strokeWidth={2.25} />
-          </button>
           <button className="ttr-btn ttr-btn--primary">
             <Download size={14} strokeWidth={2.25} />
             Xuất báo cáo
@@ -110,53 +150,74 @@ export default function TantouReports() {
       <div className="ttr-stats">
         <div className="ttr-card ttr-stat">
           <div className="ttr-stat__head">
-            <span className="ttr-stat__label">TỔNG DOANH THU BẢN IN</span>
+            <span className="ttr-stat__label">TỔNG SERIES PHỤ TRÁCH</span>
             <div className="ttr-stat__icon ttr-stat__icon--up">
-              <TrendingUp size={16} strokeWidth={2.25} />
+              <BookOpen size={16} strokeWidth={2.25} />
             </div>
           </div>
-          <div className="ttr-stat__value">¥1.2B</div>
+          <div className="ttr-stat__value">{stats?.totalSeries ?? "—"}</div>
           <div className="ttr-stat__delta ttr-stat__delta--up">
-            <TrendingUp size={13} strokeWidth={2.5} />
-            +14% so với quý trước
+            <CheckCircle2 size={13} strokeWidth={2.5} />
+            {stats?.publishedChapters ?? 0} chương đã đăng
           </div>
           <div className="ttr-progress">
-            <div className="ttr-progress__fill" style={{ width: "72%" }} />
+            <div
+              className="ttr-progress__fill"
+              style={{ width: `${onTimePct}%` }}
+            />
           </div>
         </div>
 
         <div className="ttr-card ttr-stat">
           <div className="ttr-stat__head">
-            <span className="ttr-stat__label">
-              LƯỢT XEM KỸ THUẬT SỐ (HÀNG TUẦN)
-            </span>
-            <div className="ttr-stat__icon ttr-stat__icon--neutral">
+            <span className="ttr-stat__label">DEADLINE ĐÚNG HẠN</span>
+            <div
+              className={`ttr-stat__icon ${onTimePct >= 70 ? "ttr-stat__icon--up" : "ttr-stat__icon--down"}`}
+            >
               <Eye size={16} strokeWidth={2.25} />
             </div>
           </div>
-          <div className="ttr-stat__value">4.8M</div>
+          <div className="ttr-stat__value">{onTimePct}%</div>
           <div className="ttr-stat__sub">
-            <span className="ttr-pill ttr-pill--green">+8.2%</span>
-            độc giả hoạt động
+            <span
+              className={`ttr-pill ${onTimePct >= 70 ? "ttr-pill--green" : ""}`}
+            >
+              {stats?.totalDeadlines ?? 0} deadline
+            </span>
+            tổng cộng
           </div>
         </div>
 
         <div className="ttr-card ttr-stat">
           <div className="ttr-stat__head">
-            <span className="ttr-stat__label">XẾP HẠNG TẠP CHÍ TRUNG BÌNH</span>
-            <div className="ttr-stat__icon ttr-stat__icon--down">
-              <TrendingDown size={16} strokeWidth={2.25} />
+            <span className="ttr-stat__label">CHƯƠNG CHỜ DUYỆT</span>
+            <div
+              className={`ttr-stat__icon ${(stats?.pendingReviewChapters ?? 0) > 0 ? "ttr-stat__icon--down" : "ttr-stat__icon--up"}`}
+            >
+              <Clock size={16} strokeWidth={2.25} />
             </div>
           </div>
-          <div className="ttr-stat__value">#3.2</div>
-          <div className="ttr-stat__delta ttr-stat__delta--down">
-            Giảm từ #2.8 tháng trước
+          <div className="ttr-stat__value">
+            {stats?.pendingReviewChapters ?? "—"}
+          </div>
+          <div
+            className={`ttr-stat__delta ${(stats?.pendingReviewChapters ?? 0) > 0 ? "ttr-stat__delta--down" : ""}`}
+          >
+            {(stats?.pendingReviewChapters ?? 0) > 0 ? (
+              <>
+                <TrendingDown size={13} /> Cần xem xét
+              </>
+            ) : (
+              <>
+                <TrendingUp size={13} /> Không có tồn đọng
+              </>
+            )}
           </div>
           <div className="ttr-rank-row">
-            {RANK_OPTIONS.map((n) => (
+            {[1, 2, 3, 4].map((n) => (
               <div
                 key={n}
-                className={`ttr-rank-chip ${n === 3 ? "ttr-rank-chip--active" : ""}`}
+                className={`ttr-rank-chip ${n === Math.min(4, Math.max(1, stats?.pendingReviewChapters ?? 0)) ? "ttr-rank-chip--active" : ""}`}
               >
                 {n}
               </div>
@@ -168,95 +229,149 @@ export default function TantouReports() {
       <div className="ttr-grid">
         <div className="ttr-card ttr-chart">
           <div className="ttr-chart__head">
-            <h2>Xu hướng Hiệu suất</h2>
-            <div className="ttr-tabs">
-              <button
-                className={`ttr-tabs__btn ${chartTab === "sales" ? "ttr-tabs__btn--active" : ""}`}
-                onClick={() => setChartTab("sales")}
-              >
-                Doanh số
-              </button>
-              <button
-                className={`ttr-tabs__btn ${chartTab === "engagement" ? "ttr-tabs__btn--active" : ""}`}
-                onClick={() => setChartTab("engagement")}
-              >
-                Tương tác
-              </button>
-            </div>
+            <h2>Tiến độ Deadline Thực tế</h2>
           </div>
 
           <div className="ttr-chart__body">
-            <div
-              className="ttr-chart__target"
-              style={{ bottom: `${TARGET_LINE}%` }}
-            >
-              <span className="ttr-chart__target-label">Mục tiêu</span>
-            </div>
-
             <div className="ttr-bars">
-              {data.map((d) => (
-                <div className="ttr-bar-col" key={d.label}>
-                  {d.highlight && d.tooltip && (
-                    <div className="ttr-bar-tooltip">{d.tooltip}</div>
-                  )}
+              {breakdown.map((b) => (
+                <div className="ttr-bar-col" key={b.label}>
                   <div
-                    className={`ttr-bar ${d.highlight ? "ttr-bar--highlight" : ""}`}
-                    style={{ height: `${d.value}%` }}
+                    className="ttr-bar"
+                    style={{ height: `${b.pct}%`, backgroundColor: b.color }}
                   />
-                  <span className="ttr-bar-label">
-                    {d.label.replace("Tháng ", "T")}
-                  </span>
+                  <span className="ttr-bar-label">{b.pct}%</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              marginTop: 16,
+              padding: "0 4px",
+            }}
+          >
+            {breakdown.map((b) => (
+              <div
+                key={b.label}
+                style={{ display: "flex", flexDirection: "column", gap: 4 }}
+              >
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <span
+                    style={{ fontSize: 13, color: "#334155", fontWeight: 600 }}
+                  >
+                    {b.label}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 800 }}>
+                    {b.pct}%
+                  </span>
+                </div>
+                <div className="ttr-breakdown__track">
+                  <div
+                    className="ttr-breakdown__fill"
+                    style={{ width: `${b.pct}%`, backgroundColor: b.color }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="ttr-side">
           <div className="ttr-card ttr-rankings">
-            <div className="ttr-card__title">BẢNG XẾP HẠNG TẠP CHÍ TUẦN</div>
+            <div className="ttr-card__title">XẾP HẠNG SERIES (THEO VOTE)</div>
             <div className="ttr-rankings__list">
-              {RANKINGS.map((r) => (
+              {ranking.length === 0 ? (
                 <div
-                  key={r.rank}
-                  className={`ttr-rank-item ${r.highlight ? "ttr-rank-item--highlight" : ""}`}
+                  style={{
+                    padding: "20px 18px",
+                    color: "#94a3b8",
+                    fontSize: 13,
+                  }}
                 >
-                  <span className="ttr-rank-item__num">#{r.rank}</span>
-                  <div className="ttr-rank-item__body">
-                    <strong>{r.title}</strong>
-                    <span>{r.chapter}</span>
-                  </div>
-                  <span
-                    className={`ttr-rank-item__trend ttr-rank-item__trend--${r.trend}`}
-                  >
-                    {r.trend === "up" && (
-                      <ArrowUp size={15} strokeWidth={2.5} />
-                    )}
-                    {r.trend === "down" && (
-                      <ArrowDown size={15} strokeWidth={2.5} />
-                    )}
-                    {r.trend === "flat" && (
-                      <Minus size={15} strokeWidth={2.5} />
-                    )}
-                  </span>
+                  Chưa có dữ liệu xếp hạng.
                 </div>
-              ))}
+              ) : (
+                ranking.slice(0, 5).map((r, idx) => (
+                  <div
+                    key={r.seriesId}
+                    className={`ttr-rank-item ${idx === 0 ? "ttr-rank-item--highlight" : ""}`}
+                  >
+                    <span className="ttr-rank-item__num">#{idx + 1}</span>
+                    <div className="ttr-rank-item__body">
+                      <strong>{r.title}</strong>
+                      <span>
+                        {r.latestChapter != null
+                          ? `Ch. ${r.latestChapter}`
+                          : "—"}
+                        {" · "}
+                        {r.voteCount.toLocaleString()} vote
+                        {r.rating > 0 ? ` · ⭐ ${r.rating.toFixed(1)}` : ""}
+                      </span>
+                    </div>
+                    <div
+                      className={`ttr-rank-item__trend ttr-rank-item__trend--${idx === 0 ? "up" : idx < 2 ? "flat" : "down"}`}
+                    >
+                      {idx === 0 ? (
+                        <ArrowUp size={14} />
+                      ) : idx < 2 ? (
+                        <Minus size={14} />
+                      ) : (
+                        <ArrowDown size={14} />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="ttr-card ttr-breakdown">
-            <div className="ttr-card__title">PHÂN TÁCH TƯƠNG TÁC</div>
+          <div className="ttr-card ttr-rankings">
+            <div className="ttr-card__title">TÓM TẮT SẢN XUẤT</div>
             <div className="ttr-breakdown__list">
-              {BREAKDOWN.map((b) => (
-                <div className="ttr-breakdown__item" key={b.label}>
+              {[
+                {
+                  label: "Chương đã đăng",
+                  value: stats?.publishedChapters ?? 0,
+                  color: "#1d4ed8",
+                },
+                {
+                  label: "Deadline đang chạy",
+                  value: stats?.totalDeadlines ?? 0,
+                  color: "#6366f1",
+                },
+                {
+                  label: "Deadline quá hạn",
+                  value: stats?.overdueDeadlines ?? 0,
+                  color: "#dc2626",
+                },
+              ].map((item) => (
+                <div key={item.label}>
                   <div className="ttr-breakdown__row">
-                    <span className="ttr-breakdown__label">{b.label}</span>
-                    <span className="ttr-breakdown__pct">{b.pct}%</span>
+                    <span className="ttr-breakdown__label">{item.label}</span>
+                    <span
+                      className="ttr-breakdown__pct"
+                      style={{ color: item.color }}
+                    >
+                      {item.value}
+                    </span>
                   </div>
                   <div className="ttr-breakdown__track">
                     <div
                       className="ttr-breakdown__fill"
-                      style={{ width: `${b.pct}%`, background: b.color }}
+                      style={{
+                        width:
+                          stats && stats.totalDeadlines > 0
+                            ? `${Math.min(100, Math.round((item.value / Math.max(stats.totalDeadlines, 1)) * 100))}%`
+                            : "0%",
+                        backgroundColor: item.color,
+                      }}
                     />
                   </div>
                 </div>
