@@ -22,9 +22,7 @@ import MangakaReports from "./pages/mangaka/MangakaReports";
 import CreateWork from "./pages/CreateWork/CreateWork";
 import ProposalReview from "./pages/tantou/ProposalReview/ProposalReview";
 import AssistantDashboard from "./pages/assistant/AssistantDashboard.tsx";
-import AssistantResourceWarehouse from "./pages/assistant/AssistantResourceWarehouse.tsx";
 import AssistantIncome from "./pages/assistant/AssistantIncome.tsx";
-import AssistantMyJob from "./pages/assistant/AssistantMyJob.tsx";
 import MangakaSeriesDetail from "./pages/mangaka/MangakaSeriesDetail.tsx";
 import Profile from "./pages/profile/Profile.tsx";
 import Settings from "./pages/settings/Settings.tsx";
@@ -122,12 +120,7 @@ function App() {
           <Route path="/assistant">
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AssistantDashboard />} />
-            <Route
-              path="recource-warehouse"
-              element={<AssistantResourceWarehouse />}
-            />
             <Route path="income" element={<AssistantIncome />} />
-            <Route path="myjob" element={<AssistantMyJob />} />
             <Route path="invitations" element={<AssistantInvitations />} />
             <Route path="tasks" element={<AssistantTasks />} />
           </Route>

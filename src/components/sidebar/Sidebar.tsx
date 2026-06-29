@@ -21,9 +21,7 @@ import {
   Sparkles,
   FileCheck,
   BanknoteArrowUp,
-  StickyNotes,
   Bell,
-  FileImage,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import "./Sidebar.scss";
@@ -129,17 +127,7 @@ export const Sidebar = () => {
         icon: LayoutGrid,
       },
       { path: "assistant/invitations", label: "Lời mời", icon: Bell },
-      {
-        path: "assistant/myjob",
-        label: "Công việc của tôi",
-        icon: FileCheck,
-      },
-      { path: "assistant/tasks", label: "Task của tôi", icon: FileImage },
-      {
-        path: "assistant/recource-warehouse",
-        label: "Kho tài nguyên",
-        icon: StickyNotes,
-      },
+      { path: "assistant/tasks", label: "Công việc của tôi", icon: FileCheck },
       {
         path: "assistant/income",
         label: "Thu nhập",

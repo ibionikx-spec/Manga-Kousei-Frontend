@@ -97,6 +97,7 @@ export default function MangakaPageEditor() {
   const [taskAssignTo, setTaskAssignTo] = useState<number>(0);
   const [taskDeadline, setTaskDeadline] = useState("");
   const [taskDesc, setTaskDesc] = useState("");
+  const [taskRate, setTaskRate] = useState<string>("");
   const [savingTask, setSavingTask] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -338,6 +339,7 @@ export default function MangakaPageEditor() {
         assignedTo: taskAssignTo,
         deadline: taskDeadline,
         description: taskDesc || undefined,
+        rate: taskRate ? Number(taskRate) : undefined,
       });
       setRegions((prev) =>
         prev.map((r) =>
@@ -652,6 +654,7 @@ export default function MangakaPageEditor() {
                       setTaskAssignTo(assistants[0]?.assistantId ?? 0);
                       setTaskDeadline("");
                       setTaskDesc("");
+                      setTaskRate("");
                     }}
                   >
                     <Plus size={12} /> Giao việc
@@ -709,6 +712,22 @@ export default function MangakaPageEditor() {
                         placeholder="Mô tả chi tiết..."
                         value={taskDesc}
                         onChange={(e) => setTaskDesc(e.target.value)}
+                      />
+                    </div>
+                    <div className="mpe-field">
+                      <label>
+                        Đơn giá (VND)
+                        <span className="mpe-field__hint">
+                          – để trống nếu không trả lương
+                        </span>
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1000}
+                        placeholder="VD: 50000"
+                        value={taskRate}
+                        onChange={(e) => setTaskRate(e.target.value)}
                       />
                     </div>
                     <div className="mpe-task-form__actions">

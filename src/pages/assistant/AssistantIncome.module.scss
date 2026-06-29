@@ -1,16 +1,18 @@
-$primary:        #4F46E5;
-$primary-light:  #EEF2FF;
-$success:        #10B981;
-$success-light:  #ECFDF5;
-$text:           #111827;
-$text-secondary: #6B7280;
-$border:         #E5E7EB;
-$bg:             #F8FAFC;
-$white:          #FFFFFF;
+$primary: #4f46e5;
+$primary-light: #eef2ff;
+$success: #10b981;
+$success-light: #ecfdf5;
+$text: #111827;
+$text-secondary: #6b7280;
+$border: #e5e7eb;
+$bg: #f8fafc;
+$white: #ffffff;
 
-$radius:         12px;
-$radius-sm:      8px;
-$shadow:         0 1px 3px rgba(17, 24, 39, 0.05), 0 1px 2px rgba(17, 24, 39, 0.04);
+$radius: 12px;
+$radius-sm: 8px;
+$shadow:
+  0 1px 3px rgba(17, 24, 39, 0.05),
+  0 1px 2px rgba(17, 24, 39, 0.04);
 
 .page {
   background: $bg;
@@ -19,7 +21,11 @@ $shadow:         0 1px 3px rgba(17, 24, 39, 0.05), 0 1px 2px rgba(17, 24, 39, 0.
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    "SF Pro Display",
+    -apple-system,
+    sans-serif;
   color: $text;
   box-sizing: border-box;
 }
@@ -417,4 +423,146 @@ $shadow:         0 1px 3px rgba(17, 24, 39, 0.05), 0 1px 2px rgba(17, 24, 39, 0.
   &:hover {
     color: $white;
   }
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.statCardIconSuccess {
+  background: #ecfdf5;
+  color: #10b981;
+}
+.statCardIconNeutral {
+  background: #f8fafc;
+  color: #64748b;
+}
+.statCardSubDanger {
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.stateBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+.stateError {
+  color: #dc2626;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 0;
+  color: #94a3b8;
+  svg {
+    color: #cbd5e1;
+  }
+  p {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+  small {
+    font-size: 12px;
+  }
+}
+
+.taskCell {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.taskIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.taskName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.taskSeries {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+.lateNote {
+  font-size: 11px;
+  color: #ea580c;
+  font-weight: 600;
+}
+.tdDate {
+  font-size: 12.5px;
+  color: #64748b;
+  white-space: nowrap;
+}
+.tdAmount {
+  font-size: 13px;
+  color: #475569;
+}
+.tdPenalty {
+  text-align: center;
+}
+.tdTotal {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.penaltyBadge {
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.noPenalty {
+  color: #cbd5e1;
+}
+
+.statusBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.statusPaid {
+  background: #ecfdf5;
+  color: #16a34a;
+}
+.statusPending {
+  background: #fffbeb;
+  color: #b45309;
 }

@@ -25,6 +25,7 @@ export interface TaskRes {
   assignedToName: string | null;
   assignedToAvatarUrl: string | null;
   createdAt: string;
+  rate: number | null;
 }
 
 export interface RegionRes {
@@ -112,6 +113,7 @@ export const createTask = (body: {
   assignedTo: number;
   deadline: string;
   description?: string;
+  rate?: number;
 }): Promise<TaskRes> =>
   api
     .post<ApiResponse<TaskRes>>("/mangaka/tasks", body)
@@ -125,6 +127,7 @@ export const updateTask = (
     assignedTo: number;
     deadline: string;
     description?: string;
+    rate?: number;
   },
 ): Promise<TaskRes> =>
   api

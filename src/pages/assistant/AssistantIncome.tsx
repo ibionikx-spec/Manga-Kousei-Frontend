@@ -1,337 +1,320 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Calendar,
   Wallet,
   CheckCircle2,
-  Info,
   Download,
   ChevronLeft,
   ChevronRight,
   FileText,
   PenTool,
+  Loader2,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Clock,
 } from "lucide-react";
 import styles from "./AssistantIncome.module.scss";
+import api from "../../services/api";
 
-interface IncomeRecord {
-  date: string;
-  series: string;
-  task: string;
-  taskIcon: "tone" | "lineart" | "translation";
-  unitPrice: number;
-  total: number;
+interface PaymentItem {
+  paymentId: number;
+  taskId: number;
+  taskTypeName: string | null;
+  taskDescription: string | null;
+  seriesTitle: string | null;
+  chapterNumber: number | null;
+  rate: number;
+  amount: number;
+  penaltyPct: number;
+  daysLate: number;
+  paymentMonth: string;
+  paymentStatus: string;
+  createdAt: string;
+  taskDeadline: string;
+  submittedAt: string | null;
 }
 
-const incomeRecords: IncomeRecord[] = [
-  {
-    date: "24/10",
-    series: "Sword Art Online: Project Alicization",
-    task: "Dán tone Chương 42 (20 trang)",
-    taskIcon: "tone",
-    unitPrice: 50000,
-    total: 1000000,
-  },
-  {
-    date: "22/10",
-    series: "Chainsaw Man",
-    task: "Tỉa nét nền Chương 115 (15 trang)",
-    taskIcon: "lineart",
-    unitPrice: 70000,
-    total: 1050000,
-  },
-  {
-    date: "18/10",
-    series: "Spy x Family",
-    task: "Dịch SFX Chương 80 (25 trang)",
-    taskIcon: "translation",
-    unitPrice: 30000,
-    total: 750000,
-  },
-  {
-    date: "15/10",
-    series: "Sword Art Online: Project Alicization",
-    task: "Dán tone Chương 41 (18 trang)",
-    taskIcon: "tone",
-    unitPrice: 50000,
-    total: 900000,
-  },
-];
-
-const TOTAL_ROWS = 24;
-const PAGE_SIZE = 4;
-const TOTAL_PAGES = Math.ceil(TOTAL_ROWS / PAGE_SIZE);
-
-const formatCurrency = (value: number): string => value.toLocaleString("vi-VN");
-
-const renderTaskIcon = (type: IncomeRecord["taskIcon"]) => {
-  switch (type) {
-    case "tone":
-      return <PenTool size={14} className={styles.taskIcon} />;
-    case "lineart":
-    case "translation":
-    default:
-      return <FileText size={14} className={styles.taskIcon} />;
-  }
-};
-
-const MonthSelector: React.FC<{
-  label: string;
-  onPrev: () => void;
-  onNext: () => void;
-}> = ({ label, onPrev, onNext }) => (
-  <div className={styles.monthSelector}>
-    <Calendar size={16} className={styles.monthSelectorIcon} />
-    <span className={styles.monthSelectorLabel}>{label}</span>
-    <div className={styles.monthSelectorNav}>
-      <button
-        className={styles.monthSelectorBtn}
-        onClick={onPrev}
-        aria-label="Tháng trước"
-      >
-        <ChevronLeft size={16} />
-      </button>
-      <button
-        className={styles.monthSelectorBtn}
-        onClick={onNext}
-        aria-label="Tháng sau"
-      >
-        <ChevronRight size={16} />
-      </button>
-    </div>
-  </div>
-);
-
-const PageHeader: React.FC<{
+interface IncomeMonthRes {
+  month: string;
   monthLabel: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-}> = ({ monthLabel, onPrevMonth, onNextMonth }) => (
-  <div className={styles.header}>
-    <div className={styles.headerText}>
-      <span className={styles.breadcrumb}>KỲ LƯƠNG / PAYMENT PERIOD</span>
-      <h1 className={styles.title}>Thu nhập</h1>
-    </div>
-    <MonthSelector
-      label={monthLabel}
-      onPrev={onPrevMonth}
-      onNext={onNextMonth}
-    />
-  </div>
-);
+  totalAmount: number;
+  prevMonthAmount: number;
+  taskCount: number;
+  payments: PaymentItem[];
+}
 
-const TotalIncomeCard: React.FC = () => (
-  <div className={styles.statCard}>
-    <div className={styles.statCardTop}>
-      <span className={styles.statCardTitle}>TỔNG THU NHẬP DỰ KIẾN</span>
-      <span className={`${styles.statCardIcon} ${styles.statCardIconPrimary}`}>
-        <Wallet size={18} />
-      </span>
-    </div>
-    <div className={styles.statCardValue}>
-      14,500,000<span className={styles.statCardUnit}> VND</span>
-    </div>
-    <div className={`${styles.statCardSub} ${styles.statCardSubSuccess}`}>
-      +12% so với tháng trước
-    </div>
-  </div>
-);
+interface ApiResp<T> {
+  data: T;
+}
 
-const CompletedTasksCard: React.FC = () => {
-  const completed = 128;
-  const target = 160;
-  const percent = Math.min(100, Math.round((completed / target) * 100));
+const formatVnd = (n: number) => n.toLocaleString("vi-VN") + " ₫";
 
-  return (
-    <div className={styles.statCard}>
-      <div className={styles.statCardTop}>
-        <span className={styles.statCardTitle}>SỐ TASK ĐÃ HOÀN THÀNH</span>
-        <span
-          className={`${styles.statCardIcon} ${styles.statCardIconSuccess}`}
-        >
-          <CheckCircle2 size={18} />
-        </span>
-      </div>
-      <div className={styles.statCardValue}>
-        {completed}
-        <span className={styles.statCardUnit}> trang bản thảo</span>
-      </div>
-      <div className={styles.progressBar}>
-        <div
-          className={styles.progressBarFill}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </div>
-  );
+const formatPct = (pct: number) => (pct > 0 ? `${pct}%` : "—");
+
+const prevMonthStr = (month: string) => {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
-const PaymentStatusCard: React.FC = () => (
-  <div className={styles.statCard}>
-    <div className={styles.statCardTop}>
-      <span className={styles.statCardTitle}>TRẠNG THÁI THANH TOÁN</span>
-      <span className={`${styles.statCardIcon} ${styles.statCardIconNeutral}`}>
-        <Info size={18} />
-      </span>
-    </div>
-    <div className={styles.paymentStatus}>
-      <span className={styles.paymentStatusBadge}>
-        <span className={styles.paymentStatusDot} />
-        Đang chờ đối soát
-      </span>
-    </div>
-    <div className={styles.statCardSub}>Dự kiến thanh toán vào 05/11/2023</div>
-  </div>
-);
-
-const StatisticsCards: React.FC = () => (
-  <div className={styles.statsGrid}>
-    <TotalIncomeCard />
-    <CompletedTasksCard />
-    <PaymentStatusCard />
-  </div>
-);
-
-const IncomeTable: React.FC<{ records: IncomeRecord[] }> = ({ records }) => (
-  <div className={styles.tableWrap}>
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th>Ngày HT</th>
-          <th>Tên Series</th>
-          <th>Tên Task</th>
-          <th className={styles.tableNum}>Đơn Giá (VND)</th>
-          <th className={styles.tableNum}>Thành Tiền (VND)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {records.map((row, index) => (
-          <tr key={index}>
-            <td>{row.date}</td>
-            <td className={styles.tableSeries}>{row.series}</td>
-            <td>
-              <span className={styles.tableTask}>
-                {renderTaskIcon(row.taskIcon)}
-                {row.task}
-              </span>
-            </td>
-            <td className={styles.tableNum}>{formatCurrency(row.unitPrice)}</td>
-            <td className={`${styles.tableNum} ${styles.tableTotal}`}>
-              {formatCurrency(row.total)}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-const Pagination: React.FC<{
-  currentPage: number;
-  totalPages: number;
-  totalRows: number;
-  pageSize: number;
-  onPageChange: (page: number) => void;
-}> = ({ currentPage, totalPages, totalRows, pageSize, onPageChange }) => {
-  const from = (currentPage - 1) * pageSize + 1;
-  const to = Math.min(currentPage * pageSize, totalRows);
-
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-
-  return (
-    <div className={styles.pagination}>
-      <span className={styles.paginationInfo}>
-        Hiển thị {from}-{to} / {totalRows} dòng
-      </span>
-      <div className={styles.paginationControls}>
-        <button
-          className={styles.paginationBtn}
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          aria-label="Trang trước"
-        >
-          <ChevronLeft size={16} />
-        </button>
-
-        {pages.map((page) => (
-          <button
-            key={page}
-            className={`${styles.paginationPage} ${
-              page === currentPage ? styles.paginationPageActive : ""
-            }`}
-            onClick={() => onPageChange(page)}
-          >
-            {page}
-          </button>
-        ))}
-
-        <button
-          className={styles.paginationBtn}
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          aria-label="Trang sau"
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-    </div>
-  );
+const nextMonthStr = (month: string) => {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(y, m, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
-const DetailTableSection: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-
-  return (
-    <div className={styles.detailSection}>
-      <div className={styles.detailSectionHeader}>
-        <h2 className={styles.detailSectionTitle}>Bảng kê chi tiết</h2>
-        <button className={styles.exportLink}>
-          <Download size={14} />
-          Xuất PDF
-        </button>
-      </div>
-
-      <IncomeTable records={incomeRecords} />
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={TOTAL_PAGES}
-        totalRows={TOTAL_ROWS}
-        pageSize={PAGE_SIZE}
-        onPageChange={setCurrentPage}
-      />
-    </div>
-  );
+const toMonthLabel = (month: string) => {
+  const [y, m] = month.split("-").map(Number);
+  return `Tháng ${m}, ${y}`;
 };
+
+const taskIcon = (typeName: string | null) =>
+  typeName?.toLowerCase().includes("tone") ? (
+    <PenTool size={14} />
+  ) : (
+    <FileText size={14} />
+  );
 
 const IncomeDashboard: React.FC = () => {
-  const [monthLabel, setMonthLabel] = useState("Tháng 10, 2023");
+  const now = new Date();
+  const initMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const [month, setMonth] = useState(initMonth);
+  const [data, setData] = useState<IncomeMonthRes | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const shiftMonth = (delta: number) => {
-    const match = monthLabel.match(/Tháng (\d+), (\d+)/);
-    if (!match) return;
-
-    let month = parseInt(match[1], 10) + delta;
-    let year = parseInt(match[2], 10);
-
-    if (month < 1) {
-      month = 12;
-      year -= 1;
-    } else if (month > 12) {
-      month = 1;
-      year += 1;
+  const load = useCallback(async (m: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<ApiResp<IncomeMonthRes>>(
+        `/assistant/income?month=${m}`,
+      );
+      setData(res.data.data);
+    } catch {
+      setError("Không thể tải dữ liệu thu nhập.");
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    setMonthLabel(`Tháng ${month}, ${year}`);
-  };
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load(month);
+  }, [month, load]);
+
+  const pct =
+    data && data.prevMonthAmount > 0
+      ? Math.round(
+          ((data.totalAmount - data.prevMonthAmount) / data.prevMonthAmount) *
+            100,
+        )
+      : null;
+
+  const isCurrentMonth = month === initMonth;
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        monthLabel={monthLabel}
-        onPrevMonth={() => shiftMonth(-1)}
-        onNextMonth={() => shiftMonth(1)}
-      />
-      <StatisticsCards />
-      <DetailTableSection />
+      <div className={styles.header}>
+        <div className={styles.headerText}>
+          <span className={styles.breadcrumb}>KỲ LƯƠNG / PAYMENT PERIOD</span>
+          <h1 className={styles.title}>Thu nhập</h1>
+        </div>
+        <div className={styles.monthSelector}>
+          <Calendar size={16} className={styles.monthSelectorIcon} />
+          <span className={styles.monthSelectorLabel}>
+            {toMonthLabel(month)}
+          </span>
+          <div className={styles.monthSelectorNav}>
+            <button
+              className={styles.monthSelectorBtn}
+              onClick={() => setMonth(prevMonthStr(month))}
+              aria-label="Tháng trước"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              className={styles.monthSelectorBtn}
+              onClick={() => setMonth(nextMonthStr(month))}
+              disabled={isCurrentMonth}
+              aria-label="Tháng sau"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className={styles.stateBox}>
+          <Loader2 size={20} className={styles.spin} />
+          Đang tải...
+        </div>
+      ) : error ? (
+        <div className={`${styles.stateBox} ${styles.stateError}`}>
+          <AlertTriangle size={18} /> {error}
+        </div>
+      ) : (
+        <>
+          <div className={styles.statsRow}>
+            <div className={styles.statCard}>
+              <div className={styles.statCardTop}>
+                <span className={styles.statCardTitle}>
+                  TỔNG THU NHẬP THÁNG NÀY
+                </span>
+                <span
+                  className={`${styles.statCardIcon} ${styles.statCardIconPrimary}`}
+                >
+                  <Wallet size={18} />
+                </span>
+              </div>
+              <div className={styles.statCardValue}>
+                {formatVnd(data?.totalAmount ?? 0)}
+              </div>
+              {pct !== null && (
+                <div
+                  className={`${styles.statCardSub} ${
+                    pct >= 0
+                      ? styles.statCardSubSuccess
+                      : styles.statCardSubDanger
+                  }`}
+                >
+                  {pct >= 0 ? (
+                    <TrendingUp size={13} />
+                  ) : pct < 0 ? (
+                    <TrendingDown size={13} />
+                  ) : (
+                    <Minus size={13} />
+                  )}
+                  {pct >= 0 ? "+" : ""}
+                  {pct}% so với tháng trước
+                </div>
+              )}
+              {pct === null && (
+                <div className={styles.statCardSub}>
+                  Chưa có dữ liệu tháng trước
+                </div>
+              )}
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statCardTop}>
+                <span className={styles.statCardTitle}>TASK ĐÃ HOÀN THÀNH</span>
+                <span
+                  className={`${styles.statCardIcon} ${styles.statCardIconSuccess}`}
+                >
+                  <CheckCircle2 size={18} />
+                </span>
+              </div>
+              <div className={styles.statCardValue}>
+                {data?.taskCount ?? 0}
+                <span className={styles.statCardUnit}> task</span>
+              </div>
+              <div className={styles.statCardSub}>
+                được Mangaka duyệt tháng này
+              </div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statCardTop}>
+                <span className={styles.statCardTitle}>THÁNG TRƯỚC</span>
+                <span
+                  className={`${styles.statCardIcon} ${styles.statCardIconNeutral}`}
+                >
+                  <Clock size={18} />
+                </span>
+              </div>
+              <div className={styles.statCardValue}>
+                {formatVnd(data?.prevMonthAmount ?? 0)}
+              </div>
+              <div className={styles.statCardSub}>
+                {toMonthLabel(prevMonthStr(month))}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.detailSection}>
+            <div className={styles.detailSectionHeader}>
+              <h2 className={styles.detailSectionTitle}>Bảng kê chi tiết</h2>
+              <button className={styles.exportLink}>
+                <Download size={14} /> Xuất PDF
+              </button>
+            </div>
+
+            {data?.payments.length === 0 ? (
+              <div className={styles.emptyState}>
+                <Wallet size={32} strokeWidth={1.2} />
+                <p>Chưa có khoản thanh toán nào trong {toMonthLabel(month)}.</p>
+                <small>
+                  Hoàn thành task và được Mangaka duyệt để nhận lương.
+                </small>
+              </div>
+            ) : (
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>NGÀY GHI NHẬN</th>
+                      <th>TASK</th>
+                      <th>ĐƠN GIÁ</th>
+                      <th>PHẠT</th>
+                      <th>THỰC NHẬN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.payments.map((p) => (
+                      <tr key={p.paymentId}>
+                        <td className={styles.tdDate}>
+                          {p.createdAt?.split(" ")[0] ?? "—"}
+                        </td>
+                        <td>
+                          <div className={styles.taskCell}>
+                            <span className={styles.taskIcon}>
+                              {taskIcon(p.taskTypeName)}
+                            </span>
+                            <div>
+                              <div className={styles.taskName}>
+                                {p.taskTypeName ?? "Task"}
+                                {p.chapterNumber != null &&
+                                  ` – Ch.${p.chapterNumber}`}
+                              </div>
+                              {p.seriesTitle && (
+                                <div className={styles.taskSeries}>
+                                  {p.seriesTitle}
+                                </div>
+                              )}
+                              {p.daysLate > 0 && (
+                                <div className={styles.lateNote}>
+                                  Trễ {p.daysLate} ngày
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className={styles.tdAmount}>{formatVnd(p.rate)}</td>
+                        <td className={styles.tdPenalty}>
+                          {p.penaltyPct > 0 ? (
+                            <span className={styles.penaltyBadge}>
+                              -{formatPct(p.penaltyPct)}
+                            </span>
+                          ) : (
+                            <span className={styles.noPenalty}>—</span>
+                          )}
+                        </td>
+                        <td className={styles.tdTotal}>
+                          {formatVnd(p.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
