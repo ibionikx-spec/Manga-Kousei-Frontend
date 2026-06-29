@@ -21,7 +21,6 @@ import {
   Sparkles,
   FileCheck,
   BanknoteArrowUp,
-  StickyNotes,
   Bell,
   FileImage,
 } from "lucide-react";
@@ -135,11 +134,6 @@ export const Sidebar = () => {
         icon: FileCheck,
       },
       { path: "assistant/tasks", label: "Task của tôi", icon: FileImage },
-      {
-        path: "assistant/recource-warehouse",
-        label: "Kho tài nguyên",
-        icon: StickyNotes,
-      },
       {
         path: "assistant/income",
         label: "Thu nhập",
