@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   BellRing,
   AlertTriangle,
@@ -18,6 +18,15 @@ import {
   Megaphone,
 } from "lucide-react";
 import styles from "./AssistantDashboard.module.scss";
+import {
+  fetchMyTasks,
+  type AssistantTaskRes,
+} from "../../services/taskSubmissionService";
+import {
+  fetchMyNotifications,
+  type NotificationItem,
+} from "../../services/notificationService";
+import api from "../../services/api";
 
 interface Notification {
   icon: "edit" | "file";
@@ -50,84 +59,128 @@ interface Resource {
   label: string;
 }
 
-const notifications: Notification[] = [
-  {
-    icon: "edit",
-    title: "Yêu cầu sửa đổi: 'Tones Page 12'",
-    desc: "Giảm độ đậm của tone ở panel cuối xuống 20%.",
-    time: "10p trước",
-  },
-  {
-    icon: "file",
-    title: "Tài liệu mới: 'Character Sheet Vol 3'",
-    desc: "Đã thêm vào Kho tài nguyên.",
-    time: "1h trước",
-  },
-];
+interface IncomeMonthRes {
+  month: string;
+  monthLabel: string;
+  totalAmount: number;
+  prevMonthAmount: number;
+  taskCount: number;
+}
 
-const kanbanColumns: KanbanColumn[] = [
-  {
-    id: "todo",
-    label: "CHỜ LÀM",
-    count: 3,
-    cards: [
-      {
-        tag: "KIỂM SÍ CUỐI CÙNG",
-        chapter: "Chương 42",
-        title: "Background Page 5",
-        action: "Tài nguyên",
-      },
-    ],
-  },
-  {
-    id: "doing",
-    label: "ĐANG LÀM",
-    count: 1,
-    cards: [
-      {
-        tag: "KIỂM SÍ CUỐI CÙNG",
-        chapter: "Chương 42",
-        title: "Tones Page 12",
-        deadline: "Hôm nay 18:00",
-        warning: true,
-        action: "Nộp kết quả",
-      },
-    ],
-  },
-  {
-    id: "review",
-    label: "CHỜ DUYỆT",
-    count: 2,
-    cards: [
-      {
-        tag: "KIỂM SÍ CUỐI CÙNG",
-        chapter: "Chương 41",
-        title: "Inking Page 18",
-        submittedAt: "Đã nộp lúc 09:30",
-        urgent: true,
-      },
-    ],
-  },
-  {
-    id: "done",
-    label: "HOÀN THÀNH",
-    count: 14,
-    cards: [
-      {
-        tag: "KIỂM SÍ CUỐI CÙNG",
-        chapter: "Chương 41",
-        title: "Tones Page 10",
-        done: true,
-      },
-    ],
-  },
-];
+interface ApiResp<T> {
+  data: T;
+}
 
 const resources: Resource[] = [
   { icon: "user", label: "Character Sheets" },
   { icon: "layers", label: "3D Backgrounds" },
   { icon: "brush", label: "Custom Brushes" },
 ];
+
+const columnLabels: Record<KanbanColumn["id"], string> = {
+  todo: "CHỜ LÀM",
+  doing: "ĐANG LÀM",
+  review: "CHỜ DUYỆT",
+  done: "HOÀN THÀNH",
+};
+
+const formatVnd = (value: number) => `${value.toLocaleString("vi-VN")} ₫`;
+
+const formatDateTime = (value?: string) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const isWithinNext24Hours = (value?: string) => {
+  if (!value) return false;
+  const deadline = new Date(value).getTime();
+  if (Number.isNaN(deadline)) return false;
+
+  const now = Date.now();
+  return deadline >= now && deadline <= now + 24 * 60 * 60 * 1000;
+};
+
+const normalizeStatus = (status?: string): KanbanColumn["id"] => {
+  const normalized = status?.toLowerCase();
+  if (
+    normalized === "todo" ||
+    normalized === "doing" ||
+    normalized === "review" ||
+    normalized === "done"
+  ) {
+    return normalized;
+  }
+
+  return "todo";
+};
+
+const toNotification = (item: NotificationItem): Notification => ({
+  icon: item.notificationType === "REVIEW" ? "edit" : "file",
+  title: item.title,
+  desc: item.message,
+  time: item.createdAt,
+});
+
+const toKanbanCard = (task: AssistantTaskRes): KanbanCard => {
+  const status = normalizeStatus(task.taskStatus);
+  const chapter = [
+    task.seriesTitle,
+    task.chapterNumber != null ? `Chương ${task.chapterNumber}` : null,
+    task.pageNumber != null ? `Trang ${task.pageNumber}` : null,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+
+  return {
+    tag: task.taskTypeName?.toUpperCase() || "TASK",
+    chapter: chapter || "Chưa có thông tin chương",
+    title: task.description || task.chapterTitle || "Công việc chưa có mô tả",
+    deadline: formatDateTime(task.deadline),
+    submittedAt:
+      status === "review"
+        ? task.latestSubmissionStatus
+          ? `Trạng thái bài nộp: ${task.latestSubmissionStatus}`
+          : "Đang chờ duyệt"
+        : undefined,
+    warning: status !== "done" && isWithinNext24Hours(task.deadline),
+    urgent: status === "review",
+    done: status === "done",
+    action:
+      status === "doing"
+        ? "Nộp kết quả"
+        : status === "todo" && task.pageFileUrl
+          ? "Tài nguyên"
+          : undefined,
+  };
+};
+
+const buildKanbanColumns = (tasks: AssistantTaskRes[]): KanbanColumn[] => {
+  const grouped: Record<KanbanColumn["id"], KanbanCard[]> = {
+    todo: [],
+    doing: [],
+    review: [],
+    done: [],
+  };
+
+  tasks.forEach((task) => {
+    grouped[normalizeStatus(task.taskStatus)].push(toKanbanCard(task));
+  });
+
+  return (Object.keys(columnLabels) as KanbanColumn["id"][]).map((id) => ({
+    id,
+    label: columnLabels[id],
+    count: grouped[id].length,
+    cards: grouped[id],
+  }));
+};
 
 const renderNotifIcon = (type: Notification["icon"]) => {
   switch (type) {
@@ -153,7 +206,7 @@ const renderResourceIcon = (type: Resource["icon"]) => {
   }
 };
 
-const DeadlineAlert: React.FC = () => (
+const DeadlineAlert: React.FC<{ count: number }> = ({ count }) => (
   <div className={styles.deadlineAlert}>
     <div className={styles.deadlineTop}>
       <span className={styles.deadlineBadge}>
@@ -161,33 +214,46 @@ const DeadlineAlert: React.FC = () => (
         DEADLINE GẤP (24H)
       </span>
     </div>
-    <div className={styles.deadlineCount}>2</div>
+    <div className={styles.deadlineCount}>{count}</div>
     <div className={styles.deadlineLabel}>Trang cần nộp hôm nay</div>
     <div className={styles.deadlineDivider} />
     <button className={styles.deadlineLink}>Xem chi tiết →</button>
   </div>
 );
 
-const NotificationPanel: React.FC = () => (
+const NotificationPanel: React.FC<{ notifications: Notification[] }> = ({
+  notifications,
+}) => (
   <div className={styles.notifPanel}>
     <div className={styles.notifHeader}>
       <Megaphone size={16} className={styles.notifBellIcon} />
       <span className={styles.notifTitle}>THÔNG BÁO TỪ MANGAKA</span>
-      <span className={styles.notifBadge}>2 Mới</span>
+      <span className={styles.notifBadge}>{notifications.length} Mới</span>
     </div>
     <div className={styles.notifList}>
-      {notifications.map((n, i) => (
-        <div key={i} className={styles.notifItem}>
-          <div className={styles.notifItemIconWrapper}>
-            {renderNotifIcon(n.icon)}
-          </div>
+      {notifications.length === 0 ? (
+        <div className={styles.notifItem}>
           <div className={styles.notifItemBody}>
-            <div className={styles.notifItemTitle}>{n.title}</div>
-            <div className={styles.notifItemDesc}>{n.desc}</div>
+            <div className={styles.notifItemTitle}>Chưa có thông báo mới</div>
+            <div className={styles.notifItemDesc}>
+              Các cập nhật từ Mangaka sẽ xuất hiện tại đây.
+            </div>
           </div>
-          <span className={styles.notifTime}>{n.time}</span>
         </div>
-      ))}
+      ) : (
+        notifications.map((n, i) => (
+          <div key={i} className={styles.notifItem}>
+            <div className={styles.notifItemIconWrapper}>
+              {renderNotifIcon(n.icon)}
+            </div>
+            <div className={styles.notifItemBody}>
+              <div className={styles.notifItemTitle}>{n.title}</div>
+              <div className={styles.notifItemDesc}>{n.desc}</div>
+            </div>
+            <span className={styles.notifTime}>{n.time}</span>
+          </div>
+        ))
+      )}
     </div>
   </div>
 );
@@ -267,7 +333,7 @@ const KanbanCardComponent: React.FC<{ card: KanbanCard; colId: string }> = ({
   </div>
 );
 
-const KanbanBoard: React.FC = () => (
+const KanbanBoard: React.FC<{ columns: KanbanColumn[] }> = ({ columns }) => (
   <section className={styles.kanbanSection}>
     <div className={styles.kanbanSectionHeader}>
       <h2 className={styles.sectionTitle}>Tiến độ công việc</h2>
@@ -277,7 +343,7 @@ const KanbanBoard: React.FC = () => (
       <div className={styles.circleBgDecoration} />
 
       <div className={styles.kanbanBoard}>
-        {kanbanColumns.map((col) => (
+        {columns.map((col) => (
           <div
             key={col.id}
             className={`${styles.kanbanCol} ${styles[`kanbanCol_${col.id}`]}`}
@@ -295,9 +361,18 @@ const KanbanBoard: React.FC = () => (
               </span>
             </div>
             <div className={styles.kanbanCards}>
-              {col.cards.map((card, i) => (
-                <KanbanCardComponent key={i} card={card} colId={col.id} />
-              ))}
+              {col.cards.length === 0 ? (
+                <div className={styles.kanbanCard}>
+                  <div className={styles.kanbanTitle}>Không có task</div>
+                  <div className={styles.kanbanChapter}>
+                    Cột này hiện chưa có công việc.
+                  </div>
+                </div>
+              ) : (
+                col.cards.map((card, i) => (
+                  <KanbanCardComponent key={i} card={card} colId={col.id} />
+                ))
+              )}
             </div>
           </div>
         ))}
@@ -326,7 +401,9 @@ const ResourceVault: React.FC = () => (
   </div>
 );
 
-const IncomeCard: React.FC = () => (
+const IncomeCard: React.FC<{ income: IncomeMonthRes | null }> = ({
+  income,
+}) => (
   <div className={styles.incomeCard}>
     <div className={styles.incomeHeader}>
       <Wallet size={18} className={styles.incomeIcon} />
@@ -334,42 +411,114 @@ const IncomeCard: React.FC = () => (
     </div>
     <div className={styles.incomeLabel}>DỰ KIẾN NHẬN</div>
     <div className={styles.incomeMain}>
-      <div className={styles.incomeAmount}>¥45,000</div>
+      <div className={styles.incomeAmount}>
+        {formatVnd(income?.totalAmount ?? 0)}
+      </div>
       <div className={styles.incomeBreakdown}>
-        <span>14 Task x ¥3,000</span>
-        <span className={styles.incomeBonus}>+ Thưởng tiến độ</span>
+        <span>{income?.taskCount ?? 0} task đã duyệt</span>
+        <span className={styles.incomeBonus}>
+          {income?.monthLabel ?? "Tháng hiện tại"}
+        </span>
       </div>
     </div>
     <div className={styles.incomeTrack}>
-      <div className={styles.incomeFill} style={{ width: "60%" }} />
+      <div
+        className={styles.incomeFill}
+        style={{
+          width:
+            income && income.prevMonthAmount > 0
+              ? `${Math.min((income.totalAmount / income.prevMonthAmount) * 100, 100)}%`
+              : income && income.totalAmount > 0
+                ? "100%"
+                : "0%",
+        }}
+      />
     </div>
-    <div className={styles.incomeGoal}>Mục tiêu: ¥75,000</div>
+    <div className={styles.incomeGoal}>
+      Tháng trước: {formatVnd(income?.prevMonthAmount ?? 0)}
+    </div>
   </div>
 );
 
-const MangakaDashboard: React.FC = () => {
+const AssistantDashboard: React.FC = () => {
+  const [tasks, setTasks] = useState<AssistantTaskRes[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [income, setIncome] = useState<IncomeMonthRes | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [taskData, notificationData, incomeRes] = await Promise.all([
+          fetchMyTasks(),
+          fetchMyNotifications(),
+          api.get<ApiResp<IncomeMonthRes>>("/assistant/income"),
+        ]);
+
+        if (!isMounted) return;
+
+        setTasks(taskData);
+        setNotifications(notificationData.slice(0, 3).map(toNotification));
+        setIncome(incomeRes.data.data);
+      } catch {
+        if (isMounted) {
+          setError("Không thể tải dữ liệu dashboard.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const kanbanColumns = useMemo(() => buildKanbanColumns(tasks), [tasks]);
+  const urgentDeadlineCount = useMemo(
+    () =>
+      tasks.filter(
+        (task) =>
+          normalizeStatus(task.taskStatus) !== "done" &&
+          isWithinNext24Hours(task.deadline),
+      ).length,
+    [tasks],
+  );
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Bảng điều khiển</h1>
         <p className={styles.pageSubtitle}>
-          Chào buổi sáng, đây là tóm tắt công việc của bạn hôm nay.
+          {loading
+            ? "Đang tải dữ liệu công việc của bạn..."
+            : error || "Chào buổi sáng, đây là tóm tắt công việc của bạn hôm nay."}
         </p>
       </div>
 
       <div className={styles.topRow}>
-        <DeadlineAlert />
-        <NotificationPanel />
+        <DeadlineAlert count={urgentDeadlineCount} />
+        <NotificationPanel notifications={notifications} />
       </div>
 
-      <KanbanBoard />
+      <KanbanBoard columns={kanbanColumns} />
 
       <div className={styles.bottomRow}>
         <ResourceVault />
-        <IncomeCard />
+        <IncomeCard income={income} />
       </div>
     </div>
   );
 };
 
-export default MangakaDashboard;
+export default AssistantDashboard;
