@@ -1,6 +1,6 @@
-// src/components/chat/ChatWindow.tsx
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2, AlertTriangle } from "lucide-react";
+import axios from "axios";
 import {
   fetchMessages,
   sendChatMessage,
@@ -24,6 +24,7 @@ export default function ChatWindow({ conversation, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [relationshipEnded, setRelationshipEnded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,6 +74,10 @@ export default function ChatWindow({ conversation, onClose }: Props) {
     } catch (err) {
       console.error("Gửi tin nhắn thất bại", err);
       setInput(content);
+
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
+        setRelationshipEnded(true);
+      }
     } finally {
       setSending(false);
     }
@@ -149,23 +154,30 @@ export default function ChatWindow({ conversation, onClose }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="chat-window__footer">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Nhập tin nhắn..."
-          rows={1}
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!input.trim() || sending}
-          aria-label="Gửi"
-        >
-          <Send size={17} />
-        </button>
-      </div>
+      {relationshipEnded ? (
+        <div className="chat-window__ended">
+          <AlertTriangle size={15} />
+          <span>Quan hệ phân công đã kết thúc, không thể nhắn tin tiếp.</span>
+        </div>
+      ) : (
+        <div className="chat-window__footer">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Nhập tin nhắn..."
+            rows={1}
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!input.trim() || sending}
+            aria-label="Gửi"
+          >
+            <Send size={17} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
