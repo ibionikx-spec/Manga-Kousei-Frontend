@@ -25,6 +25,7 @@ import {
   markOneRead,
   type NotificationItem,
 } from "../../services/notificationService";
+import { onNotification } from "../../services/notificationSocket";
 import "./Header.scss";
 
 export const Header = () => {
@@ -78,6 +79,13 @@ export const Header = () => {
       .catch(() => setNotifications([]))
       .finally(() => setNotifLoading(false));
   }, [activeUtility]);
+
+  useEffect(() => {
+    const unsubscribe = onNotification((newNotif) => {
+      setNotifications((prev) => [newNotif, ...prev]);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleMarkAllRead = async () => {
     await markAllRead();
